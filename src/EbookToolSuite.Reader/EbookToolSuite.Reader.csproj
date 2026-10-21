@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- 方案 A（见决策日志）：Reader 是 WebView 宿主，必须用 Windows 专用 TFM
+         才能引用 Microsoft.Web.WebView2。它是仅有的两个 Windows 专用程序集之一
+         （另一个是 App），但不含任何 XAML 视图。 -->
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- 阅读器界面文件。必须复制到输出目录：ReaderService 打开一本书时
+         会把它们复制进那本书的缓存目录，这样页面与章节内容同源
+         （同一个 ebook.local 虚拟主机），父窗口才能操作 iframe 里的文档。 -->
+    <Content Include="Assets\Reader\**\*" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Assets\Editor\**\*" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- 版本由 Directory.Packages.props 提供（CPM） -->
+    <PackageReference Include="Microsoft.Web.WebView2" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\EbookToolSuite.Core\EbookToolSuite.Core.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,138 @@
+<UserControl x:Class="EbookToolSuite.App.Views.Pages.QueuePage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="clr-namespace:EbookToolSuite.App.Controls"
+             xmlns:conv="clr-namespace:EbookToolSuite.App.Converters"
+             x:Name="Root">
+  <UserControl.Resources>
+    <BooleanToVisibilityConverter x:Key="BoolToVis" />
+    <conv:InverseBoolToVisibilityConverter x:Key="InverseBoolToVis" />
+  </UserControl.Resources>
+
+  <Grid Margin="24">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="*" />
+    </Grid.RowDefinitions>
+
+    <!-- 抬头：汇总（页面标题已由顶栏显示，这里不再重复） -->
+    <TextBlock x:Name="SummaryTextBlock" Grid.Row="0" Text="{Binding SummaryText}"
+               FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
+
+    <!-- 工具条 -->
+    <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,14,0,0">
+      <Button x:Name="CancelAllButton" Content="全部取消"
+              Style="{StaticResource SecondaryButtonStyle}"
+              Command="{Binding CancelAllCommand}" />
+      <Button x:Name="ClearFinishedButton" Content="清除已完成" Margin="8,0,0,0"
+              Style="{StaticResource SecondaryButtonStyle}"
+              Command="{Binding ClearFinishedCommand}" />
+      <Button x:Name="RefreshButton" Content="刷新" Margin="8,0,0,0"
+              Style="{StaticResource SecondaryButtonStyle}" Click="OnRefreshClick" />
+    </StackPanel>
+
+    <!-- 错误条：操作失败时给一句话 + 重试（T7-3 补：以前只能干看着） -->
+    <Border x:Name="ErrorBar" Grid.Row="2" Margin="0,12,0,0" Padding="12,8"
+            CornerRadius="6"
+            Background="{DynamicResource CardBackgroundBrush}"
+            BorderBrush="{DynamicResource BorderSubtleBrush}" BorderThickness="1"
+            Visibility="{Binding HasError, Converter={StaticResource BoolToVis}}">
+      <DockPanel LastChildFill="True">
+        <Button DockPanel.Dock="Right" Content="重试" Margin="12,0,0,0" Padding="12,2"
+                Style="{StaticResource SecondaryButtonStyle}"
+                Click="OnRefreshClick" />
+        <TextBlock Text="{Binding ErrorMessage}" TextWrapping="Wrap" VerticalAlignment="Center"
+                   Foreground="{DynamicResource TextPrimaryBrush}" />
+      </DockPanel>
+    </Border>
+
+    <!-- 任务列表 / 空态 -->
+    <Grid Grid.Row="3" Margin="0,14,0,0">
+      <ScrollViewer VerticalScrollBarVisibility="Auto"
+                    Visibility="{Binding IsEmpty, Converter={StaticResource InverseBoolToVis}}">
+        <ItemsControl x:Name="TaskList" ItemsSource="{Binding Rows}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate>
+              <Border Style="{StaticResource CardStyle}" Margin="0,0,0,8" Padding="14">
+                <Grid>
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                  </Grid.ColumnDefinitions>
+
+                  <!-- 左：书名 / 格式流 / 详情 -->
+                  <StackPanel Grid.Column="0" Margin="0,0,12,0">
+                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold"
+                               TextTrimming="CharacterEllipsis"
+                               Foreground="{DynamicResource TextPrimaryBrush}" />
+                    <TextBlock Text="{Binding FlowText}" Margin="0,4,0,0" FontSize="12"
+                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                    <TextBlock Text="{Binding DetailText}" Margin="0,4,0,0" FontSize="12"
+                               TextWrapping="Wrap"
+                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                  </StackPanel>
+
+                  <!-- 中：状态 + 进度 + 已耗时 -->
+                  <StackPanel Grid.Column="1" Width="170" Margin="0,0,12,0"
+                              VerticalAlignment="Center">
+                    <TextBlock Text="{Binding StateText}"
+                               Foreground="{DynamicResource TextPrimaryBrush}" />
+                    <ProgressBar Height="6" Margin="0,6,0,0" Minimum="0" Maximum="1"
+                                 Value="{Binding ProgressValue, Mode=OneWay}"
+                                 IsIndeterminate="{Binding IsIndeterminate, Mode=OneWay}"
+                                 Visibility="{Binding ShowProgress, Converter={StaticResource BoolToVis}}" />
+                    <TextBlock Text="{Binding ElapsedText}" Margin="0,4,0,0" FontSize="11"
+                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                  </StackPanel>
+
+                  <!-- 右：操作 -->
+                  <StackPanel Grid.Column="2" Orientation="Horizontal"
+                              VerticalAlignment="Center">
+                    <Button Content="查看日志" Style="{StaticResource SecondaryButtonStyle}"
+                            Command="{Binding DataContext.ViewLogCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                            CommandParameter="{Binding}" />
+                    <!-- T2-7 用户要求：产物在哪、怎么拿走。都只在真的产出成功且文件还在时可用。 -->
+                    <Button Content="跳转" Margin="6,0,0,0"
+                            Style="{StaticResource SecondaryButtonStyle}"
+                            IsEnabled="{Binding CanOpenOutput, Mode=OneWay}"
+                            ToolTip="在资源管理器里定位这个文件"
+                            Command="{Binding DataContext.OpenLocationCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                            CommandParameter="{Binding}" />
+                    <Button Content="导出" Margin="6,0,0,0"
+                            Style="{StaticResource SecondaryButtonStyle}"
+                            IsEnabled="{Binding CanOpenOutput, Mode=OneWay}"
+                            ToolTip="把这个文件另存到别处（原文件不动）"
+                            Command="{Binding DataContext.ExportCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                            CommandParameter="{Binding}" />
+                    <Button Content="取消" Margin="6,0,0,0"
+                            Style="{StaticResource SecondaryButtonStyle}"
+                            IsEnabled="{Binding CanCancel, Mode=OneWay}"
+                            Command="{Binding DataContext.CancelCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                            CommandParameter="{Binding}" />
+                    <Button Content="重试" Margin="6,0,0,0"
+                            Style="{StaticResource SecondaryButtonStyle}"
+                            IsEnabled="{Binding CanRetry, Mode=OneWay}"
+                            Command="{Binding DataContext.RetryCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                            CommandParameter="{Binding}" />
+                    <Button Content="移除" Margin="6,0,0,0"
+                            Style="{StaticResource SecondaryButtonStyle}"
+                            IsEnabled="{Binding CanRemove, Mode=OneWay}"
+                            Command="{Binding DataContext.RemoveCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                            CommandParameter="{Binding}" />
+                  </StackPanel>
+                </Grid>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </ScrollViewer>
+
+      <c:EmptyState x:Name="State" IconGlyph="{StaticResource IconGlyphQueue}" Title="转换队列是空的"
+                    Body="在书库里选中一本书点「转换」，或批量选择后点「批量转换」，任务就会排到这里。"
+                    Visibility="{Binding IsEmpty, Converter={StaticResource BoolToVis}}" />
+    </Grid>
+  </Grid>
+</UserControl>

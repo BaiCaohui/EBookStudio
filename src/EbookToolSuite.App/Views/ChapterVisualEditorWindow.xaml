@@ -1,0 +1,31 @@
+﻿<Window x:Class="EbookToolSuite.App.Views.ChapterVisualEditorWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
+        Title="可视编辑章节" Width="1060" Height="820" MinWidth="640" MinHeight="460"
+        WindowStartupLocation="CenterOwner">
+  <Grid>
+    <Grid.RowDefinitions>
+      <RowDefinition Height="*" />
+      <RowDefinition Height="Auto" />
+    </Grid.RowDefinitions>
+
+    <!-- 界面全在 Assets/Editor/editor.html 里（与阅读器同一套 WebView2 渲染栈，保证"所见即所得"） -->
+    <wv2:WebView2 x:Name="Web" Grid.Row="0" />
+
+    <!-- T5-4 历史：列出最近的快照（时间 + 变更描述），点【还原】把工作区退回到那一刻。
+         每个快照都是"自己完整可用"的：全量基线整份拷回，增量快照只覆盖它记的那些文件。 -->
+    <Border Grid.Row="1" Padding="8,4" Background="{DynamicResource SurfaceHoverBrush}" BorderBrush="{DynamicResource BorderSubtleBrush}" BorderThickness="0,1,0,0">
+      <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+        <TextBlock Text="历史" VerticalAlignment="Center" Margin="0,0,6,0" />
+        <ComboBox x:Name="HistoryBox" Width="430" VerticalAlignment="Center"
+                  ToolTip="打开工作区时的全量快照 / 每次保存前 / 全部替换前 / 还原前自动快照" />
+        <Button x:Name="RestoreButton" Content="还原" Margin="8,0,0,0" Padding="10,2"
+                Click="OnRestoreClick" ToolTip="把工作区还原到选中的快照（还原前会自动再建一份反向快照）" />
+        <Button x:Name="RefreshHistoryButton" Content="刷新" Margin="6,0,0,0" Padding="10,2"
+                Click="OnRefreshHistoryClick" />
+        <TextBlock x:Name="HistoryHint" VerticalAlignment="Center" Margin="10,0,0,0" Foreground="{DynamicResource TextSecondaryBrush}" />
+      </StackPanel>
+    </Border>
+  </Grid>
+</Window>

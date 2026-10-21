@@ -1,0 +1,1201 @@
+/* 阅读器外壳样式。注意：这是"外壳"的样式，书的样式在 iframe 里面，
+   两者互不影响（这正是用 iframe 而不是 innerHTML 的原因）。
+   正文的颜色/字号/行距由 reader.js 注入 iframe，不在这里。 */
+
+:root {
+  --shell-bg: #F3F3F3;
+  --shell-fg: #1F1F1F;
+  --shell-fg-dim: #6B6B6B;
+  --shell-border: #E0E0E0;
+  --shell-border-strong: #8C8C8C;
+  --shell-icon-fg: #4D4D4D;
+  --shell-btn-bg: #FFFFFF;
+  --shell-btn-hover: #F0F0F0;
+  --shell-accent: #0067C0;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --shell-bg: #202020;
+    --shell-fg: #F0F0F0;
+    --shell-fg-dim: #A0A0A0;
+    --shell-border: #383838;
+    --shell-border-strong: #9A9A9A;
+    --shell-icon-fg: #C8C8C8;
+    --shell-btn-bg: #2D2D2D;
+    --shell-btn-hover: #3A3A3A;
+    --shell-accent: #4CC2FF;
+  }
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--shell-bg);
+  color: var(--shell-fg);
+  font-family: "Microsoft YaHei UI", "Segoe UI", system-ui, sans-serif;
+  font-size: 13px;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+}
+
+#toolbar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  /* 按钮多起来（PDF 项目集有 14 项）之后窄窗口会把最右边几个挤掉，所以允许折行：
+     窗口够宽仍是一行，窄了自动变两行（用户实测反馈）。 */
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--shell-border);
+  background: var(--shell-bg);
+}
+
+/* PDF 的上一页 / 下一页放在工具栏两端（与 EPUB 的"上一章 / 下一章"同位）；
+   非 PDF 模式藏起来（EPUB 用 #btnPrev / #btnNext）。
+   `margin-left: auto` 是为了折行时也对：窄窗口下它会落到最后一行，光靠 DOM 顺序
+   会贴在那一行的**左边**，加上 auto 才是用户要的"最右边"。 */
+#pdfPrev,
+#pdfNext { display: none; }
+
+body.ets-pdf #pdfPrev,
+body.ets-pdf #pdfNext { display: inline-flex; }
+
+body.ets-pdf #pdfNext { margin-left: auto; }
+
+/* PDF / 漫画：工具栏固定成两条显式行（DOM 由 reader.js 的 ensurePdfToolbarRows 重排）：
+     第一行 = 上一页 …（目录 / 书名）… 下一页 → 上一页永远最左、下一页永远最右
+     第二行 = 页控件 / 缩放 / 模式 / 全屏 / 外部打开 … 主题 → 主题永远在这一行最右
+   原先只靠 flex-wrap 自然折行：窄窗口下"下一页"落到第二行右端、主题跑到第一行右端。
+   第一行不许折（两端定位才有意义，书名可省略号收缩）；第二行允许折，主题靠 auto 顶右。 */
+body.ets-pdf #toolbar {
+  flex-direction: column;
+  align-items: stretch;
+  flex-wrap: nowrap;
+}
+
+body.ets-pdf .pdfToolRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+body.ets-pdf #pdfToolRowTop {
+  flex-wrap: nowrap;
+  min-width: 0;
+}
+
+body.ets-pdf #pdfToolRowBottom {
+  flex-wrap: wrap;
+}
+
+/* EPUB / TXT：同样固定成两行（DOM 由 reader.js 的 ensureEpubToolbarRows 重排，id 全不变）：
+     第一行 = 上一页 …（目录 / 书签 / 笔记 / 章节标题）… 下一页 → 无论窗口多窄，上一页永远在首行最左、下一页永远在首行最右（滚动模式下这两枚显示"上一章/下一章"）
+     第二行 = 主题 / 编码 / Aa / 分页 / 编辑本章 / 查找替换
+   用户 2026-10-19 要求：EPUB 的"上一页 / 下一页"也要像 PDF 那样固定在第一行两端；底部状态条的上一章/下一章不在本次范围。
+   第一行不许折（两端定位才有意义，章节标题可省略号收缩）；第二行允许折。 */
+body.ets-epub-rows #toolbar {
+  flex-direction: column;
+  align-items: stretch;
+  flex-wrap: nowrap;
+}
+
+body.ets-epub-rows .epubToolRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+body.ets-epub-rows #epubToolRowTop {
+  flex-wrap: nowrap;
+  min-width: 0;
+}
+
+body.ets-epub-rows #epubToolRowBottom {
+  flex-wrap: wrap;
+}
+
+body.ets-epub-rows #btnPrev,
+body.ets-epub-rows #btnNext {
+  flex: 0 0 auto;
+}
+
+/* auto 把下一页顶到首行最右；折行时它也只会落在自己所在行的右端 */
+body.ets-epub-rows #btnNext { margin-left: auto; }
+
+/* 宽窗口合并成一行（合并与否由 reader.js 按**实测阈值**决定，不写死窗口宽度）：
+   行容器 display:contents 让子元素直接排进 #toolbar；上一页靠 DOM 顺序留在最左，
+   下一页靠 order + margin-left:auto 落在最右。一行模式**不折行**——
+   阈值已经保证放得下，真放不下时标题（唯一可收缩项）让位，绝不会把下一页挤到第二行。 */
+body.ets-epub-rows.ets-epub-wide #toolbar {
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+}
+
+body.ets-epub-rows.ets-epub-wide .epubToolRow { display: contents; }
+body.ets-epub-rows.ets-epub-wide #btnNext { order: 3; margin-left: auto; }
+
+/* 一行模式下标题是唯一能让位的：收缩 + 裁掉溢出的页码文字，免得压到下一页按钮上 */
+body.ets-epub-rows.ets-epub-wide #heading { min-width: 0; overflow: hidden; }
+
+
+/* PDF / 漫画：标题块（原先「正在打开」那一块）不显示——那个位置让给页码 + 加减按钮。
+   EPUB / TXT 照旧显示章节标题（这条规则只挂在 .ets-pdf 上）。 */
+body.ets-pdf #heading { display: none; }
+
+/* 第一行里的页码控件：与按钮同高，页码框窄一点。 */
+body.ets-pdf #pdfToolRowTop #pdfPageInput { width: 58px; }
+body.ets-pdf #pdfToolRowTop #pdfPageTotal { opacity: 0.75; }
+
+/* 缩放按钮是图标（放大镜里带 − / +），不需要文字按钮那么宽。 */
+body.ets-pdf #pdfZoomOut,
+body.ets-pdf #pdfZoomIn {
+  min-width: 44px;
+  padding-left: 8px;
+  padding-right: 8px;
+}
+
+.pdfZoomIcon {
+  display: block;
+  margin: 0 auto;
+  width: 18px;
+  height: 18px;
+  /* 图标比正文浅一小点（用户要求），不再用纯黑/纯白。 */
+  color: var(--shell-icon-fg);
+}
+
+/* 宽窗口（全屏 / 大屏）：两行合并成一行。行容器 display:contents 让子元素直接排进 #toolbar；
+   页码控件仍在上一页与下一页之间；下一页靠 order + margin-left:auto 落到这一行最右。
+   合并与否由 reader.js 的 pdfUpdateToolbarRowsForWidth() **实测高度**决定，不写死窗口宽度。 */
+body.ets-pdf.ets-pdf-wide #toolbar {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+body.ets-pdf.ets-pdf-wide .pdfToolRow { display: contents; }
+
+/* 一行模式收紧间距与按钮最小宽度：全屏级窗口（约 1660px 内容宽）也放得下整条工具栏。
+   两行模式保持原来的 12px / 76px，免得按钮显得挤。 */
+body.ets-pdf.ets-pdf-wide #toolbar { gap: 3px; font-size: 12px; }
+body.ets-pdf.ets-pdf-wide #toolbar button { min-width: 56px; padding: 5px 5px; }
+body.ets-pdf.ets-pdf-wide #toolbar select { padding: 5px 4px; }
+
+body.ets-pdf.ets-pdf-wide #pdfBar { order: 1; }
+body.ets-pdf.ets-pdf-wide #pdfNext { order: 3; margin-left: auto; }
+
+/* 两个"模式"按钮独立成区，免得和旁边的视图按钮混在一起（用户实测反馈："两个单页分不清"）。 */
+#pdfModeGroup {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 6px;
+  border: 1px solid var(--shell-border);
+  border-radius: 8px;
+}
+
+/* 「单页/滚动」与「单页/双页」：文案固定（这一枚管哪两个模式），当前状态只靠颜色——
+   白＝单页模式（按钮默认底色），绿＝滚动 / 双页。两枚都不在"非单页"状态时就是单页。 */
+#toolbar #pdfLayout.active,
+#toolbar #pdfSpread.active {
+  background: #0F7B6C;
+  border-color: #0F7B6C;
+  color: #FFFFFF;
+}
+
+/* T6-3：日漫模式按钮只在漫画下出现（PDF 没有"方向"这回事）。
+   按下色用第三种颜色（紫），与上面两枚模式按钮区分。 */
+#pdfRtl { display: none; }
+
+body.ets-comic #pdfRtl { display: inline-flex; }
+
+#toolbar #pdfRtl.active {
+  background: #6F42C1;
+  border-color: #6F42C1;
+  color: #FFFFFF;
+}
+
+/* 漫画与 PDF 用同一套工具栏（同样的位置、同样的按钮）：只有文本搜索用不上——
+   它需要文字层，漫画没有。藏起来而不是留一个按了没反应的按钮。 */
+body.ets-comic #pdfSearch { display: none !important; }
+
+#heading {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+#chapterTitle {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#chapterMeta {
+  font-size: 11px;
+  color: var(--shell-fg-dim);
+  /* 用户 2026-10-21：「第 12/14 章　第 1/4 页」——里面的"当前第几"是可输入框。
+     换成元素结构之后不能再靠 white-space:pre（HTML 里的换行会被当真换行画出来），
+     改成 nowrap：整行不折行，普通空格按普通空格渲染。 */
+  white-space: nowrap;
+}
+
+/* 章号 / 页码的输入框：与这一行文字同样大（11px），但**必须看得出是个框**（用户 2026-10-21 要求）：
+   1px 主题色边框 + 按钮底色 + 3px 圆角，高约 15px（不超一行）。悬停边框加深、聚焦用强调色。
+   宽度由 reader.js 实测字体里最宽的数字后设定：**至少 3 位数**（方便编辑），
+   章节数 / 页数超过 3 位时按实际位数自动加宽，保证数字完整显示又不占地方。 */
+#chapterMeta .metaJump {
+  box-sizing: border-box;
+  width: 3ch;
+  min-width: 0;
+  height: 1.4em;
+  margin: 0;
+  padding: 0 1px;
+  border: 1px solid var(--shell-border-strong);
+  border-radius: 3px;
+  background: var(--shell-btn-bg);
+  color: inherit;
+  font: inherit;
+  font-size: inherit;
+  line-height: 1;
+  text-align: center;
+  vertical-align: middle;
+  outline: none;
+}
+
+#chapterMeta .metaJump:hover {
+  border-color: var(--shell-fg);
+}
+
+#chapterMeta .metaJump:focus {
+  border-color: var(--shell-accent);
+  background: var(--shell-btn-hover);
+}
+
+/* 分页模式才显示「第 N/M 页」；两段之间留半个全角字的间距（原来是全角空格分隔）。 */
+#chapterMetaPage {
+  margin-left: 0.5em;
+}
+
+#toolbar select {
+  flex: 0 0 auto;
+  padding: 6px 8px;
+  border: 1px solid var(--shell-border);
+  border-radius: 6px;
+  background: var(--shell-btn-bg);
+  color: var(--shell-fg);
+  font: inherit;
+  cursor: pointer;
+}
+
+#toolbar select:hover {
+  background: var(--shell-btn-hover);
+}
+
+#typePanel {
+  position: absolute;
+  top: 46px;
+  right: 10px;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 215px;
+  padding: 10px 12px;
+  border: 1px solid var(--shell-border);
+  border-radius: 6px;
+  background: var(--shell-btn-bg);
+  color: var(--shell-fg);
+  font-size: 12px;
+}
+
+/* hidden 属性必须真的藏住（否则自定义主题的三个取色器会一直露在工具栏上） */
+[hidden] { display: none !important; }
+
+#typePanel label {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+#typePanel input[type="range"] { width: 110px; }
+
+#typePanel select {
+  max-width: 130px;
+  background: var(--shell-bg);
+  color: var(--shell-fg);
+  border: 1px solid var(--shell-border);
+  border-radius: 4px;
+}
+
+#customColors {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+#customColors input[type="color"] {
+  width: 28px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid var(--shell-border);
+  border-radius: 4px;
+  background: var(--shell-btn-bg);
+  cursor: pointer;
+}
+
+/* PDF / 漫画两行模式（用户 2026-10-21）：三个色框由 reader.js 排进第一行的「自定义」右边。
+   第一行是 nowrap 的（两端钉死上一页 / 下一页），极窄窗口下允许色框压缩，
+   保证最右边的「下一页」永远在工具栏内、不被挤出画面；宽窗合并成一行时不压缩
+   （那一行放得下，色框保持 28px 原尺寸）。 */
+body.ets-pdf:not(.ets-pdf-wide) #pdfToolRowTop #customColors { min-width: 0; }
+body.ets-pdf:not(.ets-pdf-wide) #pdfToolRowTop #customColors input[type="color"] {
+  flex: 0 1 28px;
+  min-width: 14px;
+}
+
+#toolbar button {
+  flex: 0 0 auto;
+  min-width: 76px;
+  padding: 6px 12px;
+  border: 1px solid var(--shell-border);
+  border-radius: 5px;
+  background: var(--shell-btn-bg);
+  color: var(--shell-fg);
+  font-family: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+#toolbar button:hover:not(:disabled) { background: var(--shell-btn-hover); }
+#toolbar button:disabled { opacity: 0.45; cursor: default; }
+#toolbar button:focus-visible { outline: 2px solid var(--shell-accent); outline-offset: 1px; }
+
+#viewport {
+  flex: 1 1 auto;
+  position: relative;
+  min-height: 0;
+}
+
+#chapter {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: #FFFFFF;
+}
+
+/* 降级提示条：章节规范化失败或资源缺失时出现，不挡正文。
+   即使出现这一条，正文也照样能读，所以是"提示"不是"错误页"。 */
+#notice {
+  flex: 0 0 auto;
+  padding: 6px 12px;
+  border-top: 1px solid var(--shell-border);
+  background: #FFF4CE;
+  color: #6B4E00;
+  font-size: 12px;
+}
+
+@media (prefers-color-scheme: dark) {
+  #notice { background: #3A3115; color: #F0D080; }
+}
+
+/* ---------- T4-4 目录面板：左侧抽屉，盖在正文上 ---------- */
+#tocPanel {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 320px;
+  max-width: 76%;
+  display: flex;
+  flex-direction: column;
+  background: var(--shell-bg);
+  color: var(--shell-fg);
+  border-right: 1px solid var(--shell-border);
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.22);
+  z-index: 30;
+}
+
+#tocPanel[hidden] { display: none; }
+
+#tocHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--shell-border);
+}
+
+#tocTitle { font-weight: 600; }
+
+#tocHint {
+  flex: 1;
+  font-size: 12px;
+  color: var(--shell-fg-dim);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+#tocHead button {
+  padding: 2px 8px;
+  border: 1px solid var(--shell-border);
+  border-radius: 4px;
+  background: var(--shell-btn-bg);
+  color: var(--shell-fg);
+  cursor: pointer;
+}
+
+#tocHead button:hover { background: var(--shell-btn-hover); }
+
+#tocList {
+  flex: 1;
+  overflow: auto;
+  padding: 6px 0 12px 0;
+}
+
+.tocItem {
+  padding: 6px 10px 6px 10px;
+  font-size: 14px;
+  line-height: 1.4;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tocItem:hover { background: var(--shell-btn-hover); }
+
+/* 跳不了的分组标题（EPUB3 的 span）：不挂手型、不响应悬停 */
+.tocItem.tocGroup {
+  cursor: default;
+  font-weight: 600;
+  color: var(--shell-fg-dim);
+}
+
+.tocItem.tocGroup:hover { background: transparent; }
+
+.tocItem.tocCurrent {
+  background: rgba(0, 103, 192, 0.22);
+  font-weight: 600;
+}
+
+#toolbar button.active {
+  background: var(--shell-accent);
+  color: #FFFFFF;
+  border-color: var(--shell-accent);
+}
+
+/* ---------- T4-5 TXT 编码选择器 ---------- */
+#encodingSelect { max-width: 130px; }
+
+#encodingHint {
+  max-width: 320px;
+  font-size: 12px;
+  color: var(--shell-fg-dim);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+#encodingHint[hidden] { display: none; }
+
+/* ---------- T4-6 底部状态条 / 跳转 / 查找 / 全屏 ---------- */
+#statusBar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 12px;
+  font-size: 13px;
+  color: var(--shell-fg);
+  background: var(--shell-bg);
+  border-top: 1px solid var(--shell-border);
+}
+
+#statusBar button {
+  padding: 3px 10px;
+  border: 1px solid var(--shell-border);
+  border-radius: 4px;
+  background: var(--shell-btn-bg);
+  color: var(--shell-fg);
+  cursor: pointer;
+}
+
+#statusBar button:hover:not(:disabled) { background: var(--shell-btn-hover); }
+#statusBar button:disabled { opacity: 0.45; cursor: default; }
+#statusSpacer { flex: 1; }
+#statusChapter, #statusPercent { white-space: nowrap; }
+#statusHint { color: var(--shell-fg-dim); font-size: 12px; }
+
+#gotoPanel, #findBar, #frBar {
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--shell-border);
+  border-radius: 6px;
+  background: var(--shell-btn-bg);
+  color: var(--shell-fg);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
+}
+
+#gotoPanel[hidden], #findBar[hidden], #frBar[hidden] { display: none; }
+
+#findInput, #frFind, #frReplace {
+  width: 200px;
+  padding: 4px 6px;
+  border: 1px solid var(--shell-border);
+  border-radius: 4px;
+  background: var(--shell-bg);
+  color: var(--shell-fg);
+}
+
+  /* 查找替换两个框略窄：让单行放得下的阈值落在 1280 附近（用户 2026-10-12 反馈阈值不准）。 */
+  #frFind, #frReplace { width: 160px; }
+
+
+#gotoPanel button, #findBar button, #frBar button {
+  padding: 3px 10px;
+  border: 1px solid var(--shell-border);
+  border-radius: 4px;
+  background: var(--shell-btn-bg);
+  color: var(--shell-fg);
+  cursor: pointer;
+}
+
+#findCount, #frCount { min-width: 52px; font-size: 12px; color: var(--shell-fg-dim); }
+
+#frBar select {
+  padding: 4px 6px;
+  border: 1px solid var(--shell-border);
+  border-radius: 4px;
+  background: var(--shell-btn-bg);
+  color: var(--shell-fg);
+}
+
+#frBar .frCheck {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--shell-fg-dim);
+  white-space: nowrap;
+}
+
+#frBar .frCheck input { margin: 0; }
+  /* 用户 2026-10-12：查找/替换两个输入框前面各加一个字面标签。 */
+  #frBar .frLabel { font-size: 12px; opacity: 0.72; white-space: nowrap; }
+
+  /* 用户 2026-10-12：面板整体布局。
+     宽窗：一条，往左让开工具栏右上角的【下一章】；窄窗：整条移到工具栏下方、查找一行、替换一行。 */
+  #frBar {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    row-gap: 6px;
+    right: 116px;
+    width: max-content;
+    max-width: calc(100% - 128px);
+  }
+
+  /* 计数文本可能很长（本章 x / y  全书 N 处）：限宽并省略，免得把单行撑爆。 */
+  #frBar #frCount {
+    display: inline-block;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  #frBar .frPair, #frBar .frGroup {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+  }
+
+  /* 单行放不下时（阈值由 reader.js 按实测宽度决定，见 layoutFindReplaceBar）：整条移到工具栏
+     下方、占满宽度，查找一行、替换一行，输入框自适应宽度。 */
+  #frBar.fr-narrow {
+    left: 12px;
+    right: 12px;
+    top: 52px;
+    width: auto;
+    max-width: none;
+    justify-content: flex-start;
+  }
+
+  #frBar.fr-narrow #frFindPair,
+  #frBar.fr-narrow #frReplacePair {
+    flex: 1 1 100%;
+  }
+
+  #frBar.fr-narrow #frFind,
+  #frBar.fr-narrow #frReplace {
+    flex: 1 1 auto;
+    width: auto;
+    min-width: 0;
+  }
+
+mark.ets-find {
+  background: #FFE066;
+  color: #1F1F1F;
+}
+
+mark.ets-find-current {
+  /* 【用户 2026-10-12】所有命中黄底；当前定位到的那一处红底白字，切上一个/下一个或替换后都要跟着变。 */
+  background: #E53935;
+  color: #FFFFFF;
+}
+
+/* ---------- 全屏模式（F11）：只留正文，鼠标移到顶部才浮出工具栏 ---------- */
+body.ets-fullscreen #toolbar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  z-index: 60;
+  transform: translateY(-110%);
+  transition: transform 160ms ease-out;
+}
+
+body.ets-fullscreen.ets-toolbar-peek #toolbar { transform: translateY(0); }
+body.ets-fullscreen #statusBar { display: none; }
+
+/* ==================== T6-2：PDF 项目集 ====================
+   工具栏只有一条，按格式切换项目集：body 带 .ets-pdf 时显示 PDF 那些按钮，
+   隐藏 EPUB 专属的（章节翻页 / 字体排版 / 分页模式 / 编辑本章 / 查找替换 / 编码选择）。
+   为什么不按格式生成两套 DOM：设计文档 §6.5.1 的第一条硬约束就是"界面只有一个"，
+   共用同一条工具栏才不会两边漂移。 */
+#pdfBar {
+  display: none;
+  align-items: center;
+  gap: 6px;
+}
+
+body.ets-pdf #pdfBar { display: inline-flex; }
+
+/* 预载页数以前是工具栏里的下拉，T7-4 起挪到主程序「设置 → 阅读」组（1–1000 页），
+   工具栏不再有这一项；阅读器只消费宿主下发的 pdf.preloadPages。 */
+
+body.ets-pdf #btnPrev,
+body.ets-pdf #btnNext,
+body.ets-pdf #btnType,
+body.ets-pdf #typePanel,
+body.ets-pdf #btnMode,
+body.ets-pdf #btnEditChapter,
+body.ets-pdf #btnFindReplace,
+body.ets-pdf #encodingSelect,
+body.ets-pdf #encodingHint,
+body.ets-pdf #statusPrev,
+body.ets-pdf #statusNext,
+body.ets-pdf #gotoPanel,
+body.ets-pdf #frBar { display: none !important; }
+
+/* #findBar 不在上面那条里：T6-2B 的自绘引擎要复用同一条查找栏做 PDF 全书搜索。 */
+
+/* PDF 没有"章"，标题下那行章节信息没有意义 */
+body.ets-pdf #chapterMeta { display: none; }
+
+#pdfPageInput {
+  width: 60px;
+  padding: 2px 6px;
+  /* 用户要求：页码框比其它控件更醒目——边框加深、加粗到 2px（浅色主题用 dim 灰，
+     深色主题自动变浅灰，两个主题下都看得清）。 */
+  border: 2px solid var(--shell-border-strong);
+  border-radius: 4px;
+  background: var(--shell-btn-bg);
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+}
+
+#pdfPageTotal { opacity: 0.7; }
+
+/* ---------- T6-2B：自绘 PDF 页面容器 ----------
+   宿主把每一页用 pdfium 渲染成 JPEG 送进来，这里只负责排版（缩放 / 滚动 / 旋转 / 双页）
+   与文字层。主题色不在这里定：reader.js 进 PDF 模式时把当前主题底色写进 --ets-bg。 */
+#pdfPages {
+  display: none;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background: var(--ets-bg, var(--shell-bg));
+  text-align: center;
+}
+
+body.ets-pdf #pdfPages { display: block; }
+
+/* 隐藏"丢给内核"时代留下的 iframe：PDF 模式下正文区只有自绘页面。
+   EPUB 与 TXT 照旧用 #chapter，这条规则不会碰到它们。 */
+body.ets-pdf #chapter { display: none; }
+
+/* 一行 = 1 页（单页 / 连续）或 2 页（双页并排）。行本身是块级，页面在里面居中。 */
+.pdfRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  text-align: initial;
+}
+
+.pdfRow + .pdfRow { margin-top: 14px; }
+
+/* 一页：宽高由 reader.js 用内联 style 给（按 PDF 点尺寸 × 缩放系数算出来）。
+   相对定位是文字层 .pdfText 的定位基准。 */
+.pdfPage {
+  position: relative;
+  flex: 0 0 auto;
+  overflow: hidden;
+  background: #FFFFFF;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.28);
+}
+
+/* 双页并排时两页之间留一条缝（单页/连续下 .pdfRow 里只有一页，这条规则不起作用）。 */
+.pdfPage + .pdfPage { margin-left: 14px; }
+
+/* 尺寸由 JS 用内联 style 给死（img 的固有宽高比在旋转页上与显示框不一致，
+   让它按 aspect-ratio 自适应会把图片拉伸，所以显式同时给 width/height）。
+   T6-3：漫画的页面尺寸天生不统一（封面常与内页不同），contain 让多出来的
+   那一条留白而不是把整页拉变形；PDF 每页尺寸都从同一个 pageSize 算，行为不变。 */
+.pdfImage {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* 这一页正在等宿主渲染（图还没到）：只显示一个浅色骨架，避免大片纯白闪一下。 */
+.pdfPagePending { background: var(--shell-border); }
+
+/* 渲染失败：点击重试。 */
+.pdfFail {
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  color: var(--shell-fg-dim);
+  background: var(--shell-bg);
+  font-size: 13px;
+  cursor: pointer;
+  text-align: center;
+}
+
+/* 透明文字层：和图片严格重叠，字号/行高由 reader.js 按字符框算。
+   字形透明 = pdf.js 的标准做法：能选中、能复制、能拿 getSelection()，但看不见。 */
+.pdfText {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  line-height: 1;
+  cursor: text;
+}
+
+.pdfChar {
+  position: absolute;
+  color: transparent;
+  white-space: pre;
+  transform-origin: 0 0;
+  /* 兜底：JS 会在建之前量一次宽度再把 transform 的 scaleX 压到字符框内 */
+  display: inline-block;
+}
+
+/* 搜索命中：半透明黄；当前那一处更深一层。 */
+.pdfChar.hit { background: rgba(255, 224, 102, 0.45); }
+
+.pdfChar.hitCurrent { background: rgba(255, 152, 0, 0.65); }
+
+/* 文本选中：深色主题下也要看得清（半透明蓝压在图片上也读得出来）。 */
+.pdfText ::selection { background: rgba(64, 128, 255, 0.35); }
+.pdfText ::-moz-selection { background: rgba(64, 128, 255, 0.35); }
+
+/* ==================== T6-5：书签与笔记 ====================
+   外壳里的三件东西：选中弹条、加笔记的小编辑器、书签笔记面板。
+   面板与目录抽屉同一套外观（目录在左、笔记载右），PDF 页面里的高亮画在文字层字符框上。 */
+
+/* ---------- 选中弹条：定点浮在选区上方，点空白处消失 ---------- */
+#selBar {
+  position: fixed;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 6px 8px;
+  border: 1px solid var(--shell-border);
+  border-radius: 8px;
+  background: var(--shell-bg);
+  color: var(--shell-fg);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.28);
+  max-width: 92vw;
+}
+
+#selBar[hidden] { display: none; }
+
+#selQuote {
+  max-width: 200px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 12px;
+  color: var(--shell-fg-dim);
+  border-right: 1px solid var(--shell-border);
+  padding-right: 6px;
+}
+
+#selBar button {
+  padding: 3px 10px;
+  border: 1px solid var(--shell-border);
+  border-radius: 4px;
+  background: var(--shell-btn-bg);
+  color: var(--shell-fg);
+  cursor: pointer;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+#selBar button:hover { background: var(--shell-btn-hover); }
+
+/* ---------- 笔记面板（颜色 + 7 种样式 + 备注 + 删除，参考用户截图） ---------- */
+#noteCard {
+  position: fixed;
+  z-index: 62;
+  width: min(420px, 94vw);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--shell-border);
+  border-radius: 8px;
+  background: var(--shell-bg);
+  color: var(--shell-fg);
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.32);
+}
+
+#noteCard[hidden] { display: none; }
+
+#noteCardHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+
+#noteCardStyle { font-weight: 600; }
+
+#noteCardTime {
+  flex: 1;
+  color: var(--shell-fg-dim);
+  font-size: 11px;
+}
+
+#noteCardHead button {
+  border: 0;
+  background: transparent;
+  color: var(--shell-fg-dim);
+  cursor: pointer;
+  font-size: 14px;
+}
+
+/* 颜色行：8 个圆点，选中项加一圈描边 */
+#noteColorRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.etsColorDot {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 50%;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.etsColorDot.etsColorActive {
+  border-color: var(--shell-fg);
+  box-shadow: 0 0 0 2px var(--shell-bg) inset;
+}
+
+/* 样式行：7 个按钮 */
+#noteStyleRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+#noteStyleRow button {
+  padding: 4px 8px;
+  border: 1px solid var(--shell-border);
+  border-radius: 4px;
+  background: var(--shell-btn-bg);
+  color: var(--shell-fg);
+  cursor: pointer;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+#noteStyleRow button:hover { background: var(--shell-btn-hover); }
+
+#noteStyleRow button.etsStyleActive {
+  border-color: var(--shell-accent);
+  box-shadow: 0 0 0 1px var(--shell-accent) inset;
+}
+
+#noteCardQuote {
+  font-size: 12px;
+  color: var(--shell-fg-dim);
+  max-height: 80px;
+  overflow: auto;
+  white-space: pre-wrap;
+  border-left: 3px solid var(--shell-accent);
+  padding-left: 8px;
+}
+
+#noteCardText {
+  width: 100%;
+  box-sizing: border-box;
+  resize: vertical;
+  padding: 6px 8px;
+  border: 1px solid var(--shell-border);
+  border-radius: 4px;
+  background: var(--shell-btn-bg);
+  color: var(--shell-fg);
+  font: inherit;
+  font-size: 13px;
+}
+
+#noteCardActions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+#noteCardActions button {
+  padding: 4px 12px;
+  border: 1px solid var(--shell-border);
+  border-radius: 4px;
+  background: var(--shell-btn-bg);
+  color: var(--shell-fg);
+  cursor: pointer;
+}
+
+#noteCardActions button:hover { background: var(--shell-btn-hover); }
+
+#noteCardDelete { color: #C62828; }
+
+/* ---------- 书签与笔记面板（右侧抽屉） ---------- */
+#notesPanel {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 340px;
+  max-width: 80%;
+  display: flex;
+  flex-direction: column;
+  background: var(--shell-bg);
+  color: var(--shell-fg);
+  border-left: 1px solid var(--shell-border);
+  box-shadow: -2px 0 10px rgba(0, 0, 0, 0.22);
+  z-index: 31;
+}
+
+#notesPanel[hidden] { display: none; }
+
+#notesHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--shell-border);
+}
+
+#notesTitle { font-weight: 600; }
+
+#notesHint {
+  flex: 1;
+  font-size: 12px;
+  color: var(--shell-fg-dim);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+#notesHead button {
+  padding: 2px 8px;
+  border: 1px solid var(--shell-border);
+  border-radius: 4px;
+  background: var(--shell-btn-bg);
+  color: var(--shell-fg);
+  cursor: pointer;
+}
+
+#notesHead button:hover { background: var(--shell-btn-hover); }
+
+#notesBody { flex: 1; overflow: auto; padding: 6px 0 12px 0; }
+
+.annoGroup {
+  padding: 8px 10px 4px 10px;
+  font-size: 12px;
+  color: var(--shell-fg-dim);
+}
+
+.annoItem {
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--shell-border);
+  cursor: pointer;
+}
+
+.annoItem:hover { background: var(--shell-btn-hover); }
+.annoItemCur { background: var(--shell-btn-hover); }
+.annoLabel { font-size: 13px; line-height: 1.35; }
+
+.annoMeta {
+  font-size: 11px;
+  color: var(--shell-fg-dim);
+  margin-top: 2px;
+}
+
+.annoQuote {
+  font-size: 12px;
+  color: var(--shell-fg-dim);
+  margin-top: 3px;
+  border-left: 2px solid var(--shell-accent);
+  padding-left: 6px;
+  white-space: pre-wrap;
+  max-height: 48px;
+  overflow: hidden;
+}
+
+.annoDel {
+  float: right;
+  border: 0;
+  background: transparent;
+  color: var(--shell-fg-dim);
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.annoDel:hover { color: #D13438; }
+.annoEmpty { padding: 10px; font-size: 12px; color: var(--shell-fg-dim); }
+
+/* 笔记/标记：七种样式（荧光 / 实线 / 波浪线 / 虚线 / 删除线 / 背景色 / 字体色）。
+   颜色由渲染时写到元素上的 CSS 变量带进来：
+     --ets-bg    底色（荧光、背景色）
+     --ets-fg    字色（字体色）
+     --ets-line  线色（实线/波浪线/虚线/删除线）
+   这样同一套 class 能吃任意颜色，而不用为每个颜色再写一组规则。 */
+mark.ets-note {
+  background: var(--ets-bg, #B9E6FF);
+  /* 文字色继承正文（跟随主题），不写死深色——用户 2026-10-18 纠正。 */
+  color: inherit;
+  border-radius: 2px;
+}
+
+mark.ets-mark-underline,
+mark.ets-mark-wavy,
+mark.ets-mark-dashed,
+mark.ets-mark-strike {
+  /* mark 的 UA 默认底色是黄的，这里必须清掉，否则线下面会顶着一块黄底。 */
+  background: transparent;
+  color: inherit;
+}
+
+mark.ets-mark-underline {
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 2px;
+  text-decoration-color: var(--ets-line, currentColor);
+}
+
+mark.ets-mark-wavy {
+  text-decoration: underline wavy;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 2px;
+  text-decoration-color: var(--ets-line, #C2410C);
+}
+
+mark.ets-mark-dashed {
+  text-decoration: underline dashed;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 2px;
+  text-decoration-color: var(--ets-line, #B45309);
+}
+
+mark.ets-mark-strike {
+  text-decoration: line-through;
+  text-decoration-thickness: 2px;
+  text-decoration-color: var(--ets-line, currentColor);
+}
+
+mark.ets-mark-background {
+  background: var(--ets-bg, #FFE066);
+  color: inherit;
+  border-radius: 2px;
+}
+
+mark.ets-mark-foreground {
+  background: transparent;
+  color: var(--ets-fg, inherit);
+}
+
+/* PDF 文字层的标记：只给字符框加底色（字本身仍是透明的） */
+.pdfChar.ets-note { background: var(--ets-bg, rgba(120, 200, 255, 0.55)); border-radius: 2px; }
+
+/* PDF 文字层的线类标记：字是透明的，所以装饰线必须显式给颜色才看得见。 */
+.pdfChar.ets-mark-underline {
+  text-decoration: underline;
+  text-decoration-color: var(--ets-line, #0F7B6C);
+  text-decoration-thickness: 2px;
+}
+
+.pdfChar.ets-mark-wavy {
+  text-decoration: underline wavy;
+  text-decoration-color: var(--ets-line, #C2410C);
+  text-decoration-thickness: 1.5px;
+}
+
+.pdfChar.ets-mark-dashed {
+  text-decoration: underline dashed;
+  text-decoration-color: var(--ets-line, #B45309);
+  text-decoration-thickness: 2px;
+}
+
+.pdfChar.ets-mark-strike {
+  text-decoration: line-through;
+  text-decoration-color: var(--ets-line, #B91C1C);
+  text-decoration-thickness: 2px;
+}
+
+.pdfChar.ets-mark-background { background: var(--ets-bg, rgba(255, 224, 102, 0.55)); }
+
+/* 字体色对 PDF 文字层没有意义（字符本身透明），保留规则只为 class 一致。 */
+.pdfChar.ets-mark-foreground { color: var(--ets-fg, #111); }

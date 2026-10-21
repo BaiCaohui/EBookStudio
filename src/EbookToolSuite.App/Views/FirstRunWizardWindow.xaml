@@ -1,0 +1,178 @@
+<Window x:Class="EbookToolSuite.App.Views.FirstRunWizardWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="欢迎使用 EBookStudio" Height="700" Width="860"
+        WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource WindowBackgroundBrush}">
+  <Grid Margin="24">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="*" />
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="Auto" />
+    </Grid.RowDefinitions>
+
+    <!-- 标题 + 步骤指示 -->
+    <StackPanel Grid.Row="0">
+      <TextBlock Text="EBookStudio" FontSize="20" FontWeight="SemiBold"
+                 Foreground="{DynamicResource TextPrimaryBrush}" />
+      <TextBlock x:Name="StepIndicatorText" Margin="0,4,0,0" FontSize="12"
+                 Foreground="{DynamicResource TextSecondaryBrush}"
+                 Text="第 1 步，共 4 步" />
+    </StackPanel>
+
+    <Grid Grid.Row="1" Margin="0,20,0,0">
+
+      <!-- ===== 第 1 步：欢迎 ===== -->
+      <ScrollViewer x:Name="Step1Panel" VerticalScrollBarVisibility="Auto">
+        <StackPanel>
+          <TextBlock Text="这是 EBookStudio，你的个人电子书工具箱。" FontSize="20"
+                     FontWeight="SemiBold" TextWrapping="Wrap"
+                     Foreground="{DynamicResource TextPrimaryBrush}" />
+          <TextBlock Margin="0,12,0,0" TextWrapping="Wrap"
+                     Foreground="{DynamicResource TextSecondaryBrush}"
+                     Text="接下来两步：先选择数据目录（书库、配置、缓存与备份都放在那里），再检查一下外部工具（Calibre / Java / EpubCheck）。" />
+          <TextBlock Margin="0,8,0,0" TextWrapping="Wrap"
+                     Foreground="{DynamicResource TextSecondaryBrush}"
+                     Text="所有步骤都可以跳过。缺工具只会禁用对应功能，绝不会影响启动和阅读。" />
+
+          <Border Style="{StaticResource CardStyle}" Margin="0,20,0,0">
+            <StackPanel>
+              <TextBlock Style="{StaticResource CardTitleStyle}" Text="关于数据目录" />
+              <TextBlock TextWrapping="Wrap" FontSize="12"
+                         Foreground="{DynamicResource TextSecondaryBrush}"
+                         Text="默认放在程序目录下的 Data/（绿色便携：整个程序目录可以直接拷到 U 盘或另一台机器）。如果希望放到空间更大的盘，下一步可以改。以后也能随时在「设置 → 数据」里更改，程序会自动迁移并逐文件校验。" />
+            </StackPanel>
+          </Border>
+        </StackPanel>
+      </ScrollViewer>
+
+      <!-- ===== 第 2 步：选择数据目录 ===== -->
+      <ScrollViewer x:Name="Step2Panel" VerticalScrollBarVisibility="Auto" Visibility="Collapsed">
+        <StackPanel>
+          <TextBlock Text="选择数据目录" FontSize="20" FontWeight="SemiBold"
+                     Foreground="{DynamicResource TextPrimaryBrush}" />
+          <TextBlock Margin="0,10,0,0" TextWrapping="Wrap"
+                     Foreground="{DynamicResource TextSecondaryBrush}"
+                     Text="书库、配置、缓存与备份都会放在这个目录里。默认是程序目录下的 Data/；也可以选一个空间充足的本地固定盘。" />
+
+          <Grid Margin="0,16,0,0">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="*" />
+              <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <TextBox x:Name="DataDirBox" VerticalAlignment="Center"
+                     TextChanged="OnDataDirTextChanged" LostFocus="OnDataDirLostFocus" />
+            <Button Grid.Column="1" x:Name="BrowseDataDirButton" Content="浏览…"
+                    Margin="8,0,0,0" Click="OnBrowseDataDirClick" />
+          </Grid>
+
+          <TextBlock x:Name="DataDirSpaceText" Margin="0,10,0,0" FontSize="12"
+                     TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}" />
+
+          <TextBlock Margin="0,6,0,0" FontSize="12" TextWrapping="Wrap"
+                     Foreground="{DynamicResource TextTertiaryBrush}"
+                     Text="预计占用按缓存上限 + 备份上限估算，约 3 GB；书库本身另算。剩余空间低于预计占用会禁止继续，低于 10 GB 会给出提醒。" />
+
+          <TextBlock x:Name="DataDirHintText" Margin="0,12,0,0" FontSize="13"
+                     TextWrapping="Wrap" />
+        </StackPanel>
+      </ScrollViewer>
+
+      <!-- ===== 第 3 步：工具检查 ===== -->
+      <ScrollViewer x:Name="Step3Panel" VerticalScrollBarVisibility="Auto" Visibility="Collapsed">
+        <StackPanel>
+          <TextBlock Text="检查外部工具" FontSize="20" FontWeight="SemiBold"
+                     Foreground="{DynamicResource TextPrimaryBrush}" />
+          <TextBlock Margin="0,10,0,0" TextWrapping="Wrap"
+                     Foreground="{DynamicResource TextSecondaryBrush}"
+                     Text="Calibre 负责格式转换，Java + EpubCheck 负责深度校验，WebView2 负责阅读渲染。缺失项会给出安装/修复指引；也可以稍后到「设置 → 工具」里指定路径。" />
+
+          <StackPanel Orientation="Horizontal" Margin="0,14,0,0">
+            <Button x:Name="RecheckButton" Content="重新检测" Click="OnRecheckClick" />
+            <Button x:Name="OpenToolsButton" Content="打开 Tools 目录"
+                    Margin="8,0,0,0" Click="OnOpenToolsClick" />
+          </StackPanel>
+
+          <TextBlock x:Name="ToolsStatusText" Margin="0,10,0,0" FontSize="12"
+                     TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}"
+                     Text="正在检测外部工具…" />
+
+          <ItemsControl x:Name="ToolList" Margin="0,12,0,0">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate>
+                <Border Style="{StaticResource CardStyle}" Margin="0,0,0,8" Padding="12">
+                  <Grid>
+                    <Grid.ColumnDefinitions>
+                      <ColumnDefinition Width="26" />
+                      <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="{Binding Mark}" Foreground="{Binding MarkBrush}"
+                               FontSize="14" FontWeight="Bold" VerticalAlignment="Top" />
+                    <StackPanel Grid.Column="1">
+                      <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextPrimaryBrush}" />
+                        <TextBlock Text="{Binding StateText}" Margin="10,0,0,0"
+                                   FontSize="12" Opacity="0.8" />
+                        <TextBlock Text="{Binding VersionText}" Margin="10,0,0,0"
+                                   FontSize="12" Opacity="0.6" />
+                      </StackPanel>
+                      <TextBlock Text="{Binding FixText}" Margin="0,4,0,0" FontSize="12"
+                                 TextWrapping="Wrap"
+                                 Foreground="{DynamicResource TextSecondaryBrush}" />
+                      <TextBlock Text="{Binding Detail}" Margin="0,2,0,0" FontSize="11"
+                                 TextWrapping="Wrap"
+                                 Foreground="{DynamicResource TextTertiaryBrush}" />
+                    </StackPanel>
+                  </Grid>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+
+          <!-- 设计文档 13.5：工具缺失绝不允许挡住启动，所以这里给一个显式的"跳过"入口 -->
+          <Button x:Name="SkipToolsButton" Content="稍后配置（跳过）"
+                  HorizontalAlignment="Left" Margin="0,12,0,0" Click="OnSkipClick" />
+        </StackPanel>
+      </ScrollViewer>
+
+      <!-- ===== 第 4 步：完成 ===== -->
+      <ScrollViewer x:Name="Step4Panel" VerticalScrollBarVisibility="Auto" Visibility="Collapsed">
+        <StackPanel>
+          <TextBlock Text="准备就绪" FontSize="20" FontWeight="SemiBold"
+                     Foreground="{DynamicResource TextPrimaryBrush}" />
+          <TextBlock x:Name="FinishSummaryText" Margin="0,12,0,0" TextWrapping="Wrap"
+                     Foreground="{DynamicResource TextSecondaryBrush}" />
+          <TextBlock Margin="0,10,0,0" TextWrapping="Wrap"
+                     Foreground="{DynamicResource TextSecondaryBrush}"
+                     Text="接下来想先导入书籍，还是先看看空书库？以后这些都可以在「设置」里修改。" />
+
+          <StackPanel Orientation="Horizontal" Margin="0,20,0,0">
+            <Button x:Name="ImportButton" Content="导入书籍"
+                    Style="{StaticResource PrimaryButtonStyle}" Click="OnImportClick" />
+            <Button x:Name="EmptyLibraryButton" Content="先看看空书库"
+                    Margin="8,0,0,0" Click="OnEmptyLibraryClick" />
+          </StackPanel>
+        </StackPanel>
+      </ScrollViewer>
+    </Grid>
+
+    <!-- 底部提示 -->
+    <TextBlock Grid.Row="2" x:Name="BottomHintText" Margin="0,16,0,0" FontSize="12"
+               TextWrapping="Wrap" Foreground="{DynamicResource TextTertiaryBrush}"
+               Text="所有步骤都可以跳过；缺什么工具都不会导致启动失败。" />
+
+    <!-- 导航按钮 -->
+    <Grid Grid.Row="3" Margin="0,14,0,0">
+      <Button x:Name="BackButton" Content="上一步" HorizontalAlignment="Left"
+              IsEnabled="False" Click="OnBackClick" />
+      <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+        <Button x:Name="SkipButton" Content="跳过" Margin="0,0,8,0" Click="OnSkipClick" />
+        <Button x:Name="NextButton" Content="下一步"
+                Style="{StaticResource PrimaryButtonStyle}" IsDefault="True"
+                Click="OnNextClick" />
+      </StackPanel>
+    </Grid>
+  </Grid>
+</Window>

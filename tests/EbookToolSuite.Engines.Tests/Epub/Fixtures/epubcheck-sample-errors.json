@@ -1,0 +1,929 @@
+{
+  "messages" : [ {
+    "ID" : "RSC-005",
+    "severity" : "ERROR",
+    "message" : "Error while parsing file: attribute \"clear\" not allowed here; expected attribute \"class\", \"id\", \"style\" or \"title\"",
+    "additionalLocations" : 0,
+    "locations" : [ {
+      "url" : {
+        "opaque" : false,
+        "hierarchical" : true
+      },
+      "path" : "text/part0000_split_001.html",
+      "line" : 14,
+      "column" : 53,
+      "context" : null
+    }, {
+      "url" : {
+        "opaque" : false,
+        "hierarchical" : true
+      },
+      "path" : "text/part0000_split_003.html",
+      "line" : 14,
+      "column" : 53,
+      "context" : null
+    }, {
+      "url" : {
+        "opaque" : false,
+        "hierarchical" : true
+      },
+      "path" : "text/part0000_split_006.html",
+      "line" : 14,
+      "column" : 54,
+      "context" : null
+    }, {
+      "url" : {
+        "opaque" : false,
+        "hierarchical" : true
+      },
+      "path" : "text/part0000_split_007.html",
+      "line" : 14,
+      "column" : 54,
+      "context" : null
+    }, {
+      "url" : {
+        "opaque" : false,
+        "hierarchical" : true
+      },
+      "path" : "text/part0000_split_008.html",
+      "line" : 14,
+      "column" : 54,
+      "context" : null
+    }, {
+      "url" : {
+        "opaque" : false,
+        "hierarchical" : true
+      },
+      "path" : "text/part0000_split_009.html",
+      "line" : 14,
+      "column" : 54,
+      "context" : null
+    }, {
+      "url" : {
+        "opaque" : false,
+        "hierarchical" : true
+      },
+      "path" : "text/part0000_split_010.html",
+      "line" : 14,
+      "column" : 54,
+      "context" : null
+    }, {
+      "url" : {
+        "opaque" : false,
+        "hierarchical" : true
+      },
+      "path" : "text/part0000_split_011.html",
+      "line" : 14,
+      "column" : 54,
+      "context" : null
+    }, {
+      "url" : {
+        "opaque" : false,
+        "hierarchical" : true
+      },
+      "path" : "text/part0000_split_012.html",
+      "line" : 14,
+      "column" : 54,
+      "context" : null
+    } ],
+    "suggestion" : null
+  }, {
+    "ID" : "RSC-005",
+    "severity" : "ERROR",
+    "message" : "Error while parsing file: attribute \"link\" not allowed here; expected attribute \"class\", \"dir\", \"id\", \"style\", \"title\" or \"xml:lang\"",
+    "additionalLocations" : 0,
+    "locations" : [ {
+      "url" : {
+        "opaque" : false,
+        "hierarchical" : true
+      },
+      "path" : "text/part0000_split_000.html",
+      "line" : 10,
+      "column" : 65,
+      "context" : null
+    }, {
+      "url" : {
+        "opaque" : false,
+        "hierarchical" : true
+      },
+      "path" : "text/part0000_split_001.html",
+      "line" : 10,
+      "column" : 65,
+      "context" : null
+    }, {
+      "url" : {
+        "opaque" : false,
+        "hierarchical" : true
+      },
+      "path" : "text/part0000_split_002.html",
+      "line" : 10,
+      "column" : 65,
+      "context" : null
+    }, {
+      "url" : {
+        "opaque" : false,
+        "hierarchical" : true
+      },
+      "path" : "text/part0000_split_003.html",
+      "line" : 10,
+      "column" : 65,
+      "context" : null
+    }, {
+      "url" : {
+        "opaque" : false,
+        "hierarchical" : true
+      },
+      "path" : "text/part0000_split_004.html",
+      "line" : 10,
+      "column" : 65,
+      "context" : null
+    }, {
+      "url" : {
+        "opaque" : false,
+        "hierarchical" : true
+      },
+      "path" : "text/part0000_split_005.html",
+      "line" : 10,
+      "column" : 65,
+      "context" : null
+    }, {
+      "url" : {
+        "opaque" : false,
+        "hierarchical" : true
+      },
+      "path" : "text/part0000_split_006.html",
+      "line" : 10,
+      "column" : 65,
+      "context" : null
+    }, {
+      "url" : {
+        "opaque" : false,
+        "hierarchical" : true
+      },
+      "path" : "text/part0000_split_007.html",
+      "line" : 10,
+      "column" : 65,
+      "context" : null
+    }, {
+      "url" : {
+        "opaque" : false,
+        "hierarchical" : true
+      },
+      "path" : "text/part0000_split_008.html",
+      "line" : 10,
+      "column" : 65,
+      "context" : null
+    }, {
+      "url" : {
+        "opaque" : false,
+        "hierarchical" : true
+      },
+      "path" : "text/part0000_split_009.html",
+      "line" : 10,
+      "column" : 65,
+      "context" : null
+    }, {
+      "url" : {
+        "opaque" : false,
+        "hierarchical" : true
+      },
+      "path" : "text/part0000_split_010.html",
+      "line" : 10,
+      "column" : 65,
+      "context" : null
+    }, {
+      "url" : {
+        "opaque" : false,
+        "hierarchical" : true
+      },
+      "path" : "text/part0000_split_011.html",
+      "line" : 10,
+      "column" : 65,
+      "context" : null
+    }, {
+      "url" : {
+        "opaque" : false,
+        "hierarchical" : true
+      },
+      "path" : "text/part0000_split_012.html",
+      "line" : 10,
+      "column" : 65,
+      "context" : null
+    } ],
+    "suggestion" : null
+  }, {
+    "ID" : "RSC-005",
+    "severity" : "ERROR",
+    "message" : "Error while parsing file: attribute \"type\" not allowed here; expected attribute \"class\", \"dir\", \"id\", \"lang\", \"style\", \"title\" or \"xml:lang\"",
+    "additionalLocations" : 0,
+    "locations" : [ {
+      "url" : {
+        "opaque" : false,
+        "hierarchical" : true
+      },
+      "path" : "text/part0000_split_007.html",
+      "line" : 38,
+      "column" : 35,
+      "context" : null
+    }, {
+      "url" : {
+        "opaque" : false,
+        "hierarchical" : true
+      },
+      "path" : "text/part0000_split_007.html",
+      "line" : 46,
+      "column" : 37,
+      "context" : null
+    }, {
+      "url" : {
+        "opaque" : false,
+        "hierarchical" : true
+      },
+      "path" : "text/part0000_split_008.html",
+      "line" : 37,
+      "column" : 35,
+      "context" : null
+    }, {
+      "url" : {
+        "opaque" : false,
+        "hierarchical" : true
+      },
+      "path" : "text/part0000_split_009.html",
+      "line" : 34,
+      "column" : 35,
+      "context" : null
+    }, {
+      "url" : {
+        "opaque" : false,
+        "hierarchical" : true
+      },
+      "path" : "text/part0000_split_010.html",
+      "line" : 37,
+      "column" : 35,
+      "context" : null
+    }, {
+      "url" : {
+        "opaque" : false,
+        "hierarchical" : true
+      },
+      "path" : "text/part0000_split_010.html",
+      "line" : 120,
+      "column" : 35,
+      "context" : null
+    }, {
+      "url" : {
+        "opaque" : false,
+        "hierarchical" : true
+      },
+      "path" : "text/part0000_split_010.html",
+      "line" : 160,
+      "column" : 35,
+      "context" : null
+    } ],
+    "suggestion" : null
+  }, {
+    "ID" : "RSC-005",
+    "severity" : "ERROR",
+    "message" : "Error while parsing file: attribute \"vlink\" not allowed here; expected attribute \"class\", \"dir\", \"id\", \"style\", \"title\" or \"xml:lang\"",
+    "additionalLocations" : 0,
+    "locations" : [ {
+      "url" : {
+        "opaque" : false,
+        "hierarchical" : true
+      },
+      "path" : "text/part0000_split_000.html",
+      "line" : 10,
+      "column" : 65,
+      "context" : null
+    }, {
+      "url" : {
+        "opaque" : false,
+        "hierarchical" : true
+      },
+      "path" : "text/part0000_split_001.html",
+      "line" : 10,
+      "column" : 65,
+      "context" : null
+    }, {
+      "url" : {
+        "opaque" : false,
+        "hierarchical" : true
+      },
+      "path" : "text/part0000_split_002.html",
+      "line" : 10,
+      "column" : 65,
+      "context" : null
+    }, {
+      "url" : {
+        "opaque" : false,
+        "hierarchical" : true
+      },
+      "path" : "text/part0000_split_003.html",
+      "line" : 10,
+      "column" : 65,
+      "context" : null
+    }, {
+      "url" : {
+        "opaque" : false,
+        "hierarchical" : true
+      },
+      "path" : "text/part0000_split_004.html",
+      "line" : 10,
+      "column" : 65,
+      "context" : null
+    }, {
+      "url" : {
+        "opaque" : false,
+        "hierarchical" : true
+      },
+      "path" : "text/part0000_split_005.html",
+      "line" : 10,
+      "column" : 65,
+      "context" : null
+    }, {
+      "url" : {
+        "opaque" : false,
+        "hierarchical" : true
+      },
+      "path" : "text/part0000_split_006.html",
+      "line" : 10,
+      "column" : 65,
+      "context" : null
+    }, {
+      "url" : {
+        "opaque" : false,
+        "hierarchical" : true
+      },
+      "path" : "text/part0000_split_007.html",
+      "line" : 10,
+      "column" : 65,
+      "context" : null
+    }, {
+      "url" : {
+        "opaque" : false,
+        "hierarchical" : true
+      },
+      "path" : "text/part0000_split_008.html",
+      "line" : 10,
+      "column" : 65,
+      "context" : null
+    }, {
+      "url" : {
+        "opaque" : false,
+        "hierarchical" : true
+      },
+      "path" : "text/part0000_split_009.html",
+      "line" : 10,
+      "column" : 65,
+      "context" : null
+    }, {
+      "url" : {
+        "opaque" : false,
+        "hierarchical" : true
+      },
+      "path" : "text/part0000_split_010.html",
+      "line" : 10,
+      "column" : 65,
+      "context" : null
+    }, {
+      "url" : {
+        "opaque" : false,
+        "hierarchical" : true
+      },
+      "path" : "text/part0000_split_011.html",
+      "line" : 10,
+      "column" : 65,
+      "context" : null
+    }, {
+      "url" : {
+        "opaque" : false,
+        "hierarchical" : true
+      },
+      "path" : "text/part0000_split_012.html",
+      "line" : 10,
+      "column" : 65,
+      "context" : null
+    } ],
+    "suggestion" : null
+  }, {
+    "ID" : "RSC-005",
+    "severity" : "ERROR",
+    "message" : "Error while parsing file: element \"div\" not allowed here; expected the element end-tag, text or element \"a\", \"abbr\", \"acronym\", \"applet\", \"b\", \"bdo\", \"big\", \"br\", \"cite\", \"code\", \"del\", \"dfn\", \"em\", \"i\", \"iframe\", \"img\", \"ins\", \"kbd\", \"map\", \"noscript\", \"ns:svg\", \"object\", \"q\", \"samp\", \"script\", \"small\", \"span\", \"strong\", \"sub\", \"sup\", \"tt\" or \"var\" (with xmlns:ns=\"http://www.w3.org/2000/svg\")",
+    "additionalLocations" : 0,
+    "locations" : [ {
+      "url" : {
+        "opaque" : false,
+        "hierarchical" : true
+      },
+      "path" : "text/part0000_split_000.html",
+      "line" : 28,
+      "column" : 94,
+      "context" : null
+    }, {
+      "url" : {
+        "opaque" : false,
+        "hierarchical" : true
+      },
+      "path" : "text/part0000_split_001.html",
+      "line" : 47,
+      "column" : 94,
+      "context" : null
+    }, {
+      "url" : {
+        "opaque" : false,
+        "hierarchical" : true
+      },
+      "path" : "text/part0000_split_002.html",
+      "line" : 35,
+      "column" : 94,
+      "context" : null
+    }, {
+      "url" : {
+        "opaque" : false,
+        "hierarchical" : true
+      },
+      "path" : "text/part0000_split_003.html",
+      "line" : 31,
+      "column" : 94,
+      "context" : null
+    }, {
+      "url" : {
+        "opaque" : false,
+        "hierarchical" : true
+      },
+      "path" : "text/part0000_split_005.html",
+      "line" : 29,
+      "column" : 95,
+      "context" : null
+    }, {
+      "url" : {
+        "opaque" : false,
+        "hierarchical" : true
+      },
+      "path" : "text/part0000_split_006.html",
+      "line" : 143,
+      "column" : 95,
+      "context" : null
+    }, {
+      "url" : {
+        "opaque" : false,
+        "hierarchical" : true
+      },
+      "path" : "text/part0000_split_007.html",
+      "line" : 154,
+      "column" : 95,
+      "context" : null
+    }, {
+      "url" : {
+        "opaque" : false,
+        "hierarchical" : true
+      },
+      "path" : "text/part0000_split_008.html",
+      "line" : 106,
+      "column" : 95,
+      "context" : null
+    }, {
+      "url" : {
+        "opaque" : false,
+        "hierarchical" : true
+      },
+      "path" : "text/part0000_split_009.html",
+      "line" : 132,
+      "column" : 95,
+      "context" : null
+    }, {
+      "url" : {
+        "opaque" : false,
+        "hierarchical" : true
+      },
+      "path" : "text/part0000_split_010.html",
+      "line" : 206,
+      "column" : 95,
+      "context" : null
+    }, {
+      "url" : {
+        "opaque" : false,
+        "hierarchical" : true
+      },
+      "path" : "text/part0000_split_011.html",
+      "line" : 45,
+      "column" : 95,
+      "context" : null
+    } ],
+    "suggestion" : null
+  }, {
+    "ID" : "RSC-005",
+    "severity" : "ERROR",
+    "message" : "Error while parsing file: element \"ul\" not allowed here; expected the element end-tag or element \"li\"",
+    "additionalLocations" : 0,
+    "locations" : [ {
+      "url" : {
+        "opaque" : false,
+        "hierarchical" : true
+      },
+      "path" : "text/part0000_split_007.html",
+      "line" : 46,
+      "column" : 37,
+      "context" : null
+    } ],
+    "suggestion" : null
+  } ],
+  "customMessageFileName" : null,
+  "checker" : {
+    "path" : ".\\TestCorpus\\sample-epub-3.epub",
+    "filename" : "sample-epub-3.epub",
+    "checkerVersion" : "5.4.0",
+    "checkDate" : "10-08-2026 13:09:38",
+    "elapsedTime" : 6485,
+    "nFatal" : 0,
+    "nError" : 6,
+    "nWarning" : 0,
+    "nUsage" : 0
+  },
+  "publication" : {
+    "publisher" : null,
+    "title" : "Sample Book Title",
+    "creator" : [ "Sample Author" ],
+    "date" : null,
+    "subject" : [ "Sample Subject" ],
+    "description" : null,
+    "rights" : null,
+    "identifier" : "a57e4864-49a8-477a-8709-603b60bd6819",
+    "language" : "en",
+    "nSpines" : 14,
+    "checkSum" : 0,
+    "renditionLayout" : "reflowable",
+    "renditionOrientation" : "auto",
+    "renditionSpread" : "auto",
+    "ePubVersion" : "2.0.1",
+    "isScripted" : false,
+    "hasFixedFormat" : false,
+    "isBackwardCompatible" : true,
+    "hasAudio" : false,
+    "hasVideo" : false,
+    "charsCount" : 40318,
+    "embeddedFonts" : [ ],
+    "refFonts" : [ ],
+    "hasEncryption" : false,
+    "hasSignatures" : false,
+    "contributors" : [ "calibre (2.30.0) [http://calibre-ebook.com]" ]
+  },
+  "items" : [ {
+    "id" : "cover",
+    "fileName" : "cover.jpeg",
+    "media_type" : "image/jpeg",
+    "compressedSize" : 29739,
+    "uncompressedSize" : 30536,
+    "compressionMethod" : "Deflated",
+    "checkSum" : "2027ab64a2f8fa146345fea3d96979b283f9c5c4d6304b906cfb1810a5d49121",
+    "isSpineItem" : false,
+    "spineIndex" : null,
+    "isLinear" : false,
+    "isFixedFormat" : null,
+    "isScripted" : false,
+    "renditionLayout" : null,
+    "renditionOrientation" : null,
+    "renditionSpread" : null,
+    "referencedItems" : [ ]
+  }, {
+    "id" : "css",
+    "fileName" : "stylesheet.css",
+    "media_type" : "text/css",
+    "compressedSize" : 655,
+    "uncompressedSize" : 4402,
+    "compressionMethod" : "Deflated",
+    "checkSum" : "84f152fff4bfabf4f919bfdd3f103c3c39928151182655f03e1017ea80b922",
+    "isSpineItem" : false,
+    "spineIndex" : null,
+    "isLinear" : false,
+    "isFixedFormat" : null,
+    "isScripted" : false,
+    "renditionLayout" : null,
+    "renditionOrientation" : null,
+    "renditionSpread" : null,
+    "referencedItems" : [ ]
+  }, {
+    "id" : "ePubCheck.NoManifestRef:META-INF/container.xml",
+    "fileName" : "META-INF/container.xml",
+    "media_type" : null,
+    "compressedSize" : 154,
+    "uncompressedSize" : 244,
+    "compressionMethod" : "Deflated",
+    "checkSum" : "2ffba6b75d46c551e8e8074238fdfb303bab48f23b1d6c9d860fc9f27ba",
+    "isSpineItem" : false,
+    "spineIndex" : null,
+    "isLinear" : false,
+    "isFixedFormat" : null,
+    "isScripted" : false,
+    "renditionLayout" : null,
+    "renditionOrientation" : null,
+    "renditionSpread" : null,
+    "referencedItems" : [ ]
+  }, {
+    "id" : "ePubCheck.NoManifestRef:content.opf",
+    "fileName" : "content.opf",
+    "media_type" : null,
+    "compressedSize" : 999,
+    "uncompressedSize" : 3684,
+    "compressionMethod" : "Deflated",
+    "checkSum" : "a61df6879ba7aa88eb9741fb2eeec57130cdeffd684589d3c8ed1a9288c56cb",
+    "isSpineItem" : false,
+    "spineIndex" : null,
+    "isLinear" : false,
+    "isFixedFormat" : null,
+    "isScripted" : false,
+    "renditionLayout" : null,
+    "renditionOrientation" : null,
+    "renditionSpread" : null,
+    "referencedItems" : [ "text/part0000_split_002.html#_Toc404474109", "titlepage.xhtml" ]
+  }, {
+    "id" : "ePubCheck.NoManifestRef:mimetype",
+    "fileName" : "mimetype",
+    "media_type" : null,
+    "compressedSize" : 20,
+    "uncompressedSize" : 20,
+    "compressionMethod" : "Stored",
+    "checkSum" : "e468e350d1143eb648f6c7bbd63111ec544a361ca74ecef256ac91f48b",
+    "isSpineItem" : false,
+    "spineIndex" : null,
+    "isLinear" : false,
+    "isFixedFormat" : null,
+    "isScripted" : false,
+    "renditionLayout" : null,
+    "renditionOrientation" : null,
+    "renditionSpread" : null,
+    "referencedItems" : [ ]
+  }, {
+    "id" : "id41",
+    "fileName" : "text/part0000_split_012.html",
+    "media_type" : "application/xhtml+xml",
+    "compressedSize" : 711,
+    "uncompressedSize" : 1638,
+    "compressionMethod" : "Deflated",
+    "checkSum" : "1ea93cb60f6fe66cd8451322622295d29c3928fcceff519377cc5c7111832",
+    "isSpineItem" : true,
+    "spineIndex" : 13,
+    "isLinear" : true,
+    "isFixedFormat" : false,
+    "isScripted" : false,
+    "renditionLayout" : "reflowable",
+    "renditionOrientation" : "auto",
+    "renditionSpread" : "auto",
+    "referencedItems" : [ "page_styles.css", "stylesheet.css" ]
+  }, {
+    "id" : "id410",
+    "fileName" : "text/part0000_split_003.html",
+    "media_type" : "application/xhtml+xml",
+    "compressedSize" : 737,
+    "uncompressedSize" : 1675,
+    "compressionMethod" : "Deflated",
+    "checkSum" : "16f5d367f62e6055c32e531f624c65d57c876455b4c551c18ef3d21ce5e93e6e",
+    "isSpineItem" : true,
+    "spineIndex" : 4,
+    "isLinear" : true,
+    "isFixedFormat" : false,
+    "isScripted" : false,
+    "renditionLayout" : "reflowable",
+    "renditionOrientation" : "auto",
+    "renditionSpread" : "auto",
+    "referencedItems" : [ "page_styles.css", "stylesheet.css" ]
+  }, {
+    "id" : "id411",
+    "fileName" : "text/part0000_split_002.html",
+    "media_type" : "application/xhtml+xml",
+    "compressedSize" : 924,
+    "uncompressedSize" : 2032,
+    "compressionMethod" : "Deflated",
+    "checkSum" : "ac624f1f5fed5eaa3ff7cb5af83878539db703355bb94f1b9a944e99dc9541",
+    "isSpineItem" : true,
+    "spineIndex" : 3,
+    "isLinear" : true,
+    "isFixedFormat" : false,
+    "isScripted" : false,
+    "renditionLayout" : "reflowable",
+    "renditionOrientation" : "auto",
+    "renditionSpread" : "auto",
+    "referencedItems" : [ "page_styles.css", "stylesheet.css" ]
+  }, {
+    "id" : "id412",
+    "fileName" : "text/part0000_split_001.html",
+    "media_type" : "application/xhtml+xml",
+    "compressedSize" : 785,
+    "uncompressedSize" : 3165,
+    "compressionMethod" : "Deflated",
+    "checkSum" : "65ddca355a1cd3f9aab8d0e6e6b83bbc848c276e05dac6126a70726b2252b4",
+    "isSpineItem" : true,
+    "spineIndex" : 2,
+    "isLinear" : true,
+    "isFixedFormat" : false,
+    "isScripted" : false,
+    "renditionLayout" : "reflowable",
+    "renditionOrientation" : "auto",
+    "renditionSpread" : "auto",
+    "referencedItems" : [ "page_styles.css", "stylesheet.css", "text/part0000_split_002.html#_Toc407191941", "text/part0000_split_003.html#_Toc407191942", "text/part0000_split_006.html#_Toc407191943", "text/part0000_split_007.html#_Toc407191944", "text/part0000_split_008.html#_Toc407191945", "text/part0000_split_009.html#_Toc407191946", "text/part0000_split_010.html#_Toc407191947", "text/part0000_split_011.html#_Toc407191948", "text/part0000_split_012.html#_Toc407191949" ]
+  }, {
+    "id" : "id413",
+    "fileName" : "text/part0000_split_000.html",
+    "media_type" : "application/xhtml+xml",
+    "compressedSize" : 512,
+    "uncompressedSize" : 1240,
+    "compressionMethod" : "Deflated",
+    "checkSum" : "5f477865516d16c91a782af6514448aa3a7e19906cbf749dcf1234a24e2eff35",
+    "isSpineItem" : true,
+    "spineIndex" : 1,
+    "isLinear" : true,
+    "isFixedFormat" : false,
+    "isScripted" : false,
+    "renditionLayout" : "reflowable",
+    "renditionOrientation" : "auto",
+    "renditionSpread" : "auto",
+    "referencedItems" : [ "page_styles.css", "stylesheet.css" ]
+  }, {
+    "id" : "id42",
+    "fileName" : "text/part0000_split_011.html",
+    "media_type" : "application/xhtml+xml",
+    "compressedSize" : 1143,
+    "uncompressedSize" : 2471,
+    "compressionMethod" : "Deflated",
+    "checkSum" : "7752b0b9b231df77132489fa686bc1c5bed47bfc82dcd2d5edca296bba7d0",
+    "isSpineItem" : true,
+    "spineIndex" : 12,
+    "isLinear" : true,
+    "isFixedFormat" : false,
+    "isScripted" : false,
+    "renditionLayout" : "reflowable",
+    "renditionOrientation" : "auto",
+    "renditionSpread" : "auto",
+    "referencedItems" : [ "page_styles.css", "stylesheet.css" ]
+  }, {
+    "id" : "id43",
+    "fileName" : "text/part0000_split_010.html",
+    "media_type" : "application/xhtml+xml",
+    "compressedSize" : 4903,
+    "uncompressedSize" : 12690,
+    "compressionMethod" : "Deflated",
+    "checkSum" : "3a3450b5f65e314baca37bcc3cd644b2f545cdb4bf7a38caf594b91d55144a",
+    "isSpineItem" : true,
+    "spineIndex" : 11,
+    "isLinear" : true,
+    "isFixedFormat" : false,
+    "isScripted" : false,
+    "renditionLayout" : "reflowable",
+    "renditionOrientation" : "auto",
+    "renditionSpread" : "auto",
+    "referencedItems" : [ "page_styles.css", "stylesheet.css" ]
+  }, {
+    "id" : "id44",
+    "fileName" : "text/part0000_split_009.html",
+    "media_type" : "application/xhtml+xml",
+    "compressedSize" : 3558,
+    "uncompressedSize" : 8656,
+    "compressionMethod" : "Deflated",
+    "checkSum" : "da6668558933c433d2c18f7ef33c7637fa53c166d763b0cfc02fab5ad6d875",
+    "isSpineItem" : true,
+    "spineIndex" : 10,
+    "isLinear" : true,
+    "isFixedFormat" : false,
+    "isScripted" : false,
+    "renditionLayout" : "reflowable",
+    "renditionOrientation" : "auto",
+    "renditionSpread" : "auto",
+    "referencedItems" : [ "page_styles.css", "stylesheet.css" ]
+  }, {
+    "id" : "id45",
+    "fileName" : "text/part0000_split_008.html",
+    "media_type" : "application/xhtml+xml",
+    "compressedSize" : 2768,
+    "uncompressedSize" : 6505,
+    "compressionMethod" : "Deflated",
+    "checkSum" : "97a43dbdb64c371b5a645ee09c47871e586b91c8d04b0f04e34a49cc37af1",
+    "isSpineItem" : true,
+    "spineIndex" : 9,
+    "isLinear" : true,
+    "isFixedFormat" : false,
+    "isScripted" : false,
+    "renditionLayout" : "reflowable",
+    "renditionOrientation" : "auto",
+    "renditionSpread" : "auto",
+    "referencedItems" : [ "page_styles.css", "stylesheet.css" ]
+  }, {
+    "id" : "id46",
+    "fileName" : "text/part0000_split_007.html",
+    "media_type" : "application/xhtml+xml",
+    "compressedSize" : 3655,
+    "uncompressedSize" : 9151,
+    "compressionMethod" : "Deflated",
+    "checkSum" : "255c6c334611b517f9b511808a8ff3533f96fd7b5f52346e11a3fa1e835028b1",
+    "isSpineItem" : true,
+    "spineIndex" : 8,
+    "isLinear" : true,
+    "isFixedFormat" : false,
+    "isScripted" : false,
+    "renditionLayout" : "reflowable",
+    "renditionOrientation" : "auto",
+    "renditionSpread" : "auto",
+    "referencedItems" : [ "page_styles.css", "stylesheet.css" ]
+  }, {
+    "id" : "id47",
+    "fileName" : "text/part0000_split_006.html",
+    "media_type" : "application/xhtml+xml",
+    "compressedSize" : 3296,
+    "uncompressedSize" : 8068,
+    "compressionMethod" : "Deflated",
+    "checkSum" : "4355ad6f283744bce165427fab271e8f155337c2e715d01ebf6d6241313bc",
+    "isSpineItem" : true,
+    "spineIndex" : 7,
+    "isLinear" : true,
+    "isFixedFormat" : false,
+    "isScripted" : false,
+    "renditionLayout" : "reflowable",
+    "renditionOrientation" : "auto",
+    "renditionSpread" : "auto",
+    "referencedItems" : [ "page_styles.css", "stylesheet.css" ]
+  }, {
+    "id" : "id48",
+    "fileName" : "text/part0000_split_005.html",
+    "media_type" : "application/xhtml+xml",
+    "compressedSize" : 852,
+    "uncompressedSize" : 1701,
+    "compressionMethod" : "Deflated",
+    "checkSum" : "965f2812469c2176e98714921d372d403535629693cb3ac8c645d3e6936f4b",
+    "isSpineItem" : true,
+    "spineIndex" : 6,
+    "isLinear" : true,
+    "isFixedFormat" : false,
+    "isScripted" : false,
+    "renditionLayout" : "reflowable",
+    "renditionOrientation" : "auto",
+    "renditionSpread" : "auto",
+    "referencedItems" : [ "page_styles.css", "stylesheet.css" ]
+  }, {
+    "id" : "id49",
+    "fileName" : "text/part0000_split_004.html",
+    "media_type" : "application/xhtml+xml",
+    "compressedSize" : 563,
+    "uncompressedSize" : 1122,
+    "compressionMethod" : "Deflated",
+    "checkSum" : "d4a17c5942482274bc2af61cdf22968dbfe26a3cc95a415fbe52ae7b4d750",
+    "isSpineItem" : true,
+    "spineIndex" : 5,
+    "isLinear" : true,
+    "isFixedFormat" : false,
+    "isScripted" : false,
+    "renditionLayout" : "reflowable",
+    "renditionOrientation" : "auto",
+    "renditionSpread" : "auto",
+    "referencedItems" : [ "page_styles.css", "stylesheet.css" ]
+  }, {
+    "id" : "ncx",
+    "fileName" : "toc.ncx",
+    "media_type" : "application/x-dtbncx+xml",
+    "compressedSize" : 737,
+    "uncompressedSize" : 2566,
+    "compressionMethod" : "Deflated",
+    "checkSum" : "26c976fb3d8e702cc35356bfbaeacedaa93672ddccc5d99177dbbb8bf97f86a",
+    "isSpineItem" : false,
+    "spineIndex" : null,
+    "isLinear" : false,
+    "isFixedFormat" : null,
+    "isScripted" : false,
+    "renditionLayout" : null,
+    "renditionOrientation" : null,
+    "renditionSpread" : null,
+    "referencedItems" : [ "text/part0000_split_002.html", "text/part0000_split_003.html", "text/part0000_split_006.html", "text/part0000_split_007.html", "text/part0000_split_008.html", "text/part0000_split_009.html", "text/part0000_split_010.html", "text/part0000_split_011.html", "text/part0000_split_012.html" ]
+  }, {
+    "id" : "page_css",
+    "fileName" : "page_styles.css",
+    "media_type" : "text/css",
+    "compressedSize" : 42,
+    "uncompressedSize" : 58,
+    "compressionMethod" : "Deflated",
+    "checkSum" : "abddb62ef7f8f2d532f862b21693dd94fa12197e7592c1829ab1f4380bce9",
+    "isSpineItem" : false,
+    "spineIndex" : null,
+    "isLinear" : false,
+    "isFixedFormat" : null,
+    "isScripted" : false,
+    "renditionLayout" : null,
+    "renditionOrientation" : null,
+    "renditionSpread" : null,
+    "referencedItems" : [ ]
+  }, {
+    "id" : "titlepage",
+    "fileName" : "titlepage.xhtml",
+    "media_type" : "application/xhtml+xml",
+    "compressedSize" : 411,
+    "uncompressedSize" : 799,
+    "compressionMethod" : "Deflated",
+    "checkSum" : "23fc937ff250c9bc5b135855db6455f930b85f19cc4f41a3aa7019b352a3c6",
+    "isSpineItem" : true,
+    "spineIndex" : 0,
+    "isLinear" : true,
+    "isFixedFormat" : false,
+    "isScripted" : false,
+    "renditionLayout" : "reflowable",
+    "renditionOrientation" : "auto",
+    "renditionSpread" : "auto",
+    "referencedItems" : [ "cover.jpeg" ]
+  } ]
+}

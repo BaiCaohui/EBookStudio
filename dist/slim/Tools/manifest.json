@@ -1,0 +1,114 @@
+{
+    "schemaVersion":  1,
+    "generatedAt":  "2026-10-01T23:07:24+08:00",
+    "tools":  [
+                  {
+                      "key":  "calibre",
+                      "displayName":  "Calibre 便携版",
+                      "version":  "9.15.0",
+                      "required":  true,
+                      "entryPoints":  {
+                                          "convert":  "Calibre Portable/Calibre/ebook-convert.exe",
+                                          "meta":  "Calibre Portable/Calibre/ebook-meta.exe",
+                                          "polish":  "Calibre Portable/Calibre/ebook-polish.exe",
+                                          "calibredb":  "Calibre Portable/Calibre/calibredb.exe",
+                                          "customize":  "Calibre Portable/Calibre/calibre-customize.exe"
+                                      },
+                      "sha256":  {
+                                     "Calibre Portable/Calibre/ebook-convert.exe":  "f46a01c9b8cd392e1190ce2e50a2a5a48b326c8c3eab670bbcd8b298bede501d",
+                                     "Calibre Portable/Calibre/ebook-meta.exe":  "8beb32bfe70e3038a5b090238499d2afbf4f268aafa8e02f7b1e173d04e7590d",
+                                     "Calibre Portable/Calibre/ebook-polish.exe":  "4eacfc134a138a117d3cf30009b39103db2b9569b1952fb45bd446e4589a117d",
+                                     "Calibre Portable/Calibre/calibredb.exe":  "6b927b83b6bf1765364a0b0098ad6987d5ad16dcdecab969d0f333ef64d37b24",
+                                     "Calibre Portable/Calibre/calibre-customize.exe":  "78876fcbc0b7014b65a835fa37fcd43092e24c27b34bfa5654a1145a1669ddc6"
+                                 },
+                      "env":  {
+                                  "CALIBRE_CONFIG_DIRECTORY":  "{DataDir}/CalibreConfig",
+                                  "PYTHONIOENCODING":  "utf-8",
+                                  "CALIBRE_TEMP_DIR":  "{DataDir}/Temp/Calibre",
+                                  "CALIBRE_CACHE_DIRECTORY":  "{DataDir}/Cache/Calibre",
+                                  "CALIBRE_OVERRIDE_LANG":  "en"
+                              },
+                      "probe":  {
+                                    "kind":  "process",
+                                    "file":  "Calibre Portable/Calibre/ebook-convert.exe",
+                                    "args":  [
+                                                 "--version"
+                                             ],
+                                    "expectExitCode":  0,
+                                    "versionPattern":  "calibre\\s+([\\d.]+)"
+                                },
+                      "notes":  "634 MB，不可裁剪：app/bin/Qt6WebEngineCore.dll 191MB 删掉会导致 EPUB 转 PDF 失败。CALIBRE_TEMP_DIR 指向的目录必须预先创建，否则报 FileNotFoundError 并以 exit=1 崩溃。退出码约定：0=成功，1=运行期错误，2=参数错误。"
+                  },
+                  {
+                      "key":  "jre",
+                      "displayName":  "Temurin JRE 17 (便携)",
+                      "version":  "17.0.20.1",
+                      "required":  false,
+                      "entryPoints":  {
+                                          "java":  "JRE/bin/java.exe"
+                                      },
+                      "sha256":  {
+                                     "JRE/bin/java.exe":  "1977f302375adbb920d41dac65c7e22eb9c2ed8e1e8d6258964154ff16f14406"
+                                 },
+                      "probe":  {
+                                    "kind":  "process",
+                                    "file":  "JRE/bin/java.exe",
+                                    "args":  [
+                                                 "-version"
+                                             ],
+                                    "expectExitCode":  0,
+                                    "versionPattern":  "version \"([\\d._]+)\""
+                                },
+                      "notes":  "仅 EpubCheck 使用。required=false：关闭 EPUB 校验后可不要求。本机另装有系统 Java 21/22，但一律不使用，避免版本漂移。"
+                  },
+                  {
+                      "key":  "epubcheck",
+                      "displayName":  "EpubCheck",
+                      "version":  "5.4.0",
+                      "required":  false,
+                      "entryPoints":  {
+                                          "jar":  "EpubCheck/epubcheck.jar"
+                                      },
+                      "sha256":  {
+                                     "EpubCheck/epubcheck.jar":  "2146665a124998dc6c908010ffe0d09dc4f4c8014f2c8fd6a1aa11f64c40ac93"
+                                 },
+                      "probe":  {
+                                    "kind":  "process",
+                                    "file":  "JRE/bin/java.exe",
+                                    "args":  [
+                                                 "-jar",
+                                                 "{ToolsRoot}/EpubCheck/epubcheck.jar",
+                                                 "--version"
+                                             ],
+                                    "expectExitCode":  0,
+                                    "dependsOn":  [
+                                                      "jre"
+                                                  ],
+                                    "versionPattern":  "EPUBCheck v([\\d.]+)"
+                                },
+                      "notes":  "required=false：关闭校验后可不要求。调用模板：{java} -jar {jar} \"{input}\" --json \"{out}\" --quiet（--json 自带输出文件参数，不可再叠 -o）。退出码 0=无 error，1=存在 error，1 不是进程失败。实测 418KB 书 7.0 秒、3.7MB 书 15.2 秒。"
+                  },
+                  {
+                      "key":  "pdfium",
+                      "displayName":  "pdfium (P2，可缺)",
+                      "required":  false,
+                      "entryPoints":  {
+                                          "dll":  "pdfium/pdfium.dll"
+                                      },
+                      "probe":  {
+                                    "kind":  "fileExists",
+                                    "file":  "pdfium/pdfium.dll"
+                                },
+                      "notes":  "P2 才需要。推荐直接用 Docnet.Core NuGet（自带 pdfium.dll），不必单独放。"
+                  },
+                  {
+                      "key":  "webview2",
+                      "displayName":  "WebView2 运行时",
+                      "required":  true,
+                      "probe":  {
+                                    "kind":  "webview2"
+                                },
+                      "notes":  "优先用系统常青版；若 Tools/EBWebView/ 存在则用固定版。"
+                  }
+              ]
+}

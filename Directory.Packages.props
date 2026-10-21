@@ -1,0 +1,54 @@
+<Project>
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <CentralPackageTransitivePinningEnabled>false</CentralPackageTransitivePinningEnabled>
+  </PropertyGroup>
+  <!-- 版本已于 2026-10-01 对着 nuget.azure.cn（本机实际生效的源）逐个核实。
+       引用这些包时不要写 Version，一律由本文件提供。 -->
+  <ItemGroup Label="UI">
+    <PackageVersion Include="WPF-UI" Version="4.3.0" />
+    <PackageVersion Include="HandyControl" Version="3.5.1" />
+    <PackageVersion Include="AvalonEdit" Version="6.3.1.120" />
+    <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+  </ItemGroup>
+  <ItemGroup Label="宿主与数据">
+    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.12" />
+    <PackageVersion Include="Microsoft.Data.Sqlite" Version="10.0.12" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.12" />
+    <!-- Services 里的 DI 注册扩展方法（AddPdfServices）要用它。版本与上面几个
+         Microsoft.Extensions.* 对齐；本机 NuGet 源已核实 10.0.12 可取。 -->
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.12" />
+    <!-- 测试工程要真的建一个容器来验证"注册能被解析、且是单例"。
+         Abstractions 只给 IServiceCollection，BuildServiceProvider 在完整包里。 -->
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.12" />
+  </ItemGroup>
+  <ItemGroup Label="日志">
+    <PackageVersion Include="Serilog" Version="4.4.0" />
+    <PackageVersion Include="Serilog.Extensions.Hosting" Version="10.0.0" />
+    <PackageVersion Include="Serilog.Sinks.File" Version="7.0.0" />
+    <PackageVersion Include="Serilog.Sinks.Console" Version="6.1.1" />
+    <PackageVersion Include="Serilog.Sinks.Async" Version="2.1.0" />
+  </ItemGroup>
+  <ItemGroup Label="引擎">
+    <PackageVersion Include="VersOne.Epub" Version="3.3.6" />
+    <PackageVersion Include="Microsoft.Web.WebView2" Version="1.0.4258.31" />
+    <PackageVersion Include="UTF.Unknown" Version="2.7.0" />
+    <PackageVersion Include="SharpCompress" Version="0.50.4" />
+    <PackageVersion Include="SixLabors.ImageSharp" Version="3.1.12" />
+    <PackageVersion Include="System.Speech" Version="10.0.12" />
+    <!-- pdfium 的 P/Invoke 封装（T6-2 引入，T6-2B 复用）。选它而不是
+         PDFtoImage 的理由见设计文档 §2.3.6：它只依赖自带的原生 pdfium.dll，
+         不会把 SkiaSharp 及其整条原生依赖链拖进"绿色发布"包。 -->
+    <PackageVersion Include="Docnet.Core" Version="2.6.0" />
+  </ItemGroup>
+  <ItemGroup Label="测试">
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageVersion Include="xunit" Version="2.9.3" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.4" />
+    <PackageVersion Include="coverlet.collector" Version="6.0.4" />
+  </ItemGroup>
+  <!-- 已引入：Docnet.Core（T6-2，见上方"引擎"组）。
+       仍未引入（P2 才要）：PDFtoImage、Tesseract。
+       PDFtoImage 与 Docnet.Core 两者取其一即可（设计文档 §2.3.6），
+       既然 Docnet.Core 实测可用就不引它，免得白白多带一条 SkiaSharp 原生链。 -->
+</Project>

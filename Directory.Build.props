@@ -1,0 +1,35 @@
+<Project>
+
+  <!-- 统一设置。注意：TargetFramework 不在这里设，
+       因为 5 个类库是 net10.0，而 Reader 与 App 需要 net10.0-windows。 -->
+
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <EnforceCodeStyleInBuild>false</EnforceCodeStyleInBuild>
+
+    <!-- 单人项目没有 code review，编译器就是唯一的审稿人。
+         阶段 7 之前不要长期关掉它。 -->
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <WarningsNotAsErrors>CS1591</WarningsNotAsErrors>
+
+    <!-- 中文界面必须保留完整 ICU，不能让 globalization 退化 -->
+    <InvariantGlobalization>false</InvariantGlobalization>
+    <SatelliteResourceLanguages>zh-Hans</SatelliteResourceLanguages>
+
+    <!-- 关键：禁止 trim / AOT。
+         SQLite 的 e_sqlite3 与 WebView2Loader 都是原生库，
+         裁剪后运行时才会炸，且错误信息极难定位。 -->
+    <PublishTrimmed>false</PublishTrimmed>
+    <PublishAot>false</PublishAot>
+    <PublishSingleFile>false</PublishSingleFile>
+
+    <!-- T7-6：首个对外发布版本。0.1.0 是开发期占位号。 -->
+    <Version>1.0.0</Version>
+    <Product>EbookToolSuite</Product>
+    <Deterministic>true</Deterministic>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+  </PropertyGroup>
+
+</Project>

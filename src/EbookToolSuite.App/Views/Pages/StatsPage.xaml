@@ -1,0 +1,204 @@
+<UserControl x:Class="EbookToolSuite.App.Views.Pages.StatsPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="clr-namespace:EbookToolSuite.App.Controls">
+  <UserControl.Resources>
+    <!-- 最近在读的一行：整行可点。
+         不用 ListView 是因为它自带选中态，会把"刚打开的那本书"一直高亮着，
+         而这里的点击语义是"打开阅读窗口"、不是"选中"。 -->
+    <Style x:Key="RecentRowStyle" TargetType="Button">
+      <Setter Property="Padding" Value="10,8" />
+      <Setter Property="FontSize" Value="13" />
+      <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+      <Setter Property="Cursor" Value="Hand" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="FocusVisualStyle" Value="{StaticResource FocusRingStyle}" />
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Button">
+            <Border x:Name="Bg" CornerRadius="6" Background="Transparent"
+                    Padding="{TemplateBinding Padding}">
+              <ContentPresenter HorizontalAlignment="Stretch" VerticalAlignment="Center" />
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="Bg" Property="Background"
+                        Value="{DynamicResource SurfaceHoverBrush}" />
+              </Trigger>
+              <Trigger Property="IsPressed" Value="True">
+                <Setter TargetName="Bg" Property="Background"
+                        Value="{DynamicResource SurfacePressedBrush}" />
+              </Trigger>
+              <Trigger Property="IsEnabled" Value="False">
+                <Setter Property="Opacity" Value="0.4" />
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+  </UserControl.Resources>
+
+  <Grid Margin="24">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="*" />
+    </Grid.RowDefinitions>
+
+    <!-- 顶部：标题 + 范围切换。范围按钮的选中态在代码里切 Primary/Secondary 样式。 -->
+    <Grid Grid.Row="0">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*" />
+        <ColumnDefinition Width="Auto" />
+      </Grid.ColumnDefinitions>
+
+      <StackPanel Grid.Column="0" VerticalAlignment="Center">
+        <TextBlock Text="阅读统计" FontSize="20" FontWeight="SemiBold"
+                   Foreground="{DynamicResource TextPrimaryBrush}" />
+        <TextBlock x:Name="SubtitleText" Margin="0,4,0,0" FontSize="12" TextWrapping="Wrap"
+                   Foreground="{DynamicResource TextSecondaryBrush}"
+                   Text="阅读时长、连续天数与书库构成。数据只在本机统计，不上传。" />
+      </StackPanel>
+
+      <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+        <Button x:Name="TodayButton" Content="今日" Tag="Today" Click="OnRangeClick"
+                Style="{StaticResource PrimaryButtonStyle}" Margin="0,0,8,0" />
+        <Button x:Name="WeekButton" Content="本周" Tag="Week" Click="OnRangeClick"
+                Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,8,0" />
+        <Button x:Name="MonthButton" Content="本月" Tag="Month" Click="OnRangeClick"
+                Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,8,0" />
+        <Button x:Name="AllButton" Content="全部" Tag="All" Click="OnRangeClick"
+                Style="{StaticResource SecondaryButtonStyle}" />
+      </StackPanel>
+    </Grid>
+
+    <!-- 内容与三态：同一时刻只显示一个 -->
+    <Grid Grid.Row="1" Margin="0,16,0,0">
+      <ScrollViewer x:Name="ContentHost" Visibility="Collapsed"
+                    VerticalScrollBarVisibility="Auto"
+                    HorizontalScrollBarVisibility="Disabled">
+        <StackPanel>
+
+          <!-- 四张指标卡 -->
+          <UniformGrid Columns="4">
+            <Border Style="{StaticResource CardStyle}" Margin="0,0,12,0">
+              <StackPanel>
+                <TextBlock Text="阅读时长" FontSize="12"
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
+                <TextBlock x:Name="DurationValue" Text="—" Margin="0,6,0,0" TextTrimming="CharacterEllipsis"
+                           FontSize="34" FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                <TextBlock Margin="0,2,0,0" FontSize="11" TextWrapping="Wrap"
+                           Text="范围内累计阅读时间"
+                           Foreground="{DynamicResource TextTertiaryBrush}" />
+              </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource CardStyle}" Margin="0,0,12,0">
+              <StackPanel>
+                <TextBlock Text="连续天数" FontSize="12"
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
+                <TextBlock x:Name="StreakValue" Text="—" Margin="0,6,0,0" TextTrimming="CharacterEllipsis"
+                           FontSize="34" FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                <TextBlock Margin="0,2,0,0" FontSize="11" TextWrapping="Wrap"
+                           Text="按本地自然日连续计算"
+                           Foreground="{DynamicResource TextTertiaryBrush}" />
+              </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource CardStyle}" Margin="0,0,12,0">
+              <StackPanel>
+                <TextBlock Text="读完的书数" FontSize="12"
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
+                <TextBlock x:Name="FinishedValue" Text="—" Margin="0,6,0,0" TextTrimming="CharacterEllipsis"
+                           FontSize="34" FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                <TextBlock Margin="0,2,0,0" FontSize="11" TextWrapping="Wrap"
+                           Text="范围内读完的书"
+                           Foreground="{DynamicResource TextTertiaryBrush}" />
+              </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource CardStyle}" Margin="0,0,0,0">
+              <StackPanel>
+                <TextBlock Text="平均阅读速度" FontSize="12"
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
+                <TextBlock x:Name="SpeedValue" Text="—" Margin="0,6,0,0" TextTrimming="CharacterEllipsis"
+                           FontSize="34" FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                <TextBlock Margin="0,2,0,0" FontSize="11" TextWrapping="Wrap"
+                           Text="没有字数数据时显示 —"
+                           Foreground="{DynamicResource TextTertiaryBrush}" />
+              </StackPanel>
+            </Border>
+          </UniformGrid>
+
+          <!-- 时长趋势：自绘条形图。条的高度在代码里按当日时长映射（不引图表库）。 -->
+          <Border Style="{StaticResource CardStyle}" Margin="0,16,0,0">
+            <StackPanel>
+              <Grid>
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="*" />
+                  <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Style="{StaticResource CardTitleStyle}"
+                           Text="近 14 天阅读时长" Margin="0" />
+                <TextBlock x:Name="TrendMaxText" Grid.Column="1" FontSize="11"
+                           VerticalAlignment="Center"
+                           Foreground="{DynamicResource TextTertiaryBrush}" />
+              </Grid>
+              <Grid x:Name="TrendHost" Height="132" Margin="0,8,0,0" />
+            </StackPanel>
+          </Border>
+
+          <!-- 书库构成：状态分布 + 格式分布（横条 + 数字，条宽按占比用星号列分配） -->
+          <Grid Margin="0,16,0,0">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="*" />
+              <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0" Style="{StaticResource CardStyle}" Margin="0,0,12,0">
+              <StackPanel>
+                <TextBlock Style="{StaticResource CardTitleStyle}" Text="阅读状态" />
+                <StackPanel x:Name="StatusHost" />
+              </StackPanel>
+            </Border>
+
+            <Border Grid.Column="1" Style="{StaticResource CardStyle}" Margin="0">
+              <StackPanel>
+                <TextBlock Style="{StaticResource CardTitleStyle}" Text="格式分布" />
+                <StackPanel x:Name="FormatHost" />
+              </StackPanel>
+            </Border>
+          </Grid>
+
+          <!-- 最近在读：点一行直接打开那本书 -->
+          <Border Style="{StaticResource CardStyle}" Margin="0,16,0,0">
+            <StackPanel>
+              <TextBlock Style="{StaticResource CardTitleStyle}" Text="最近在读" />
+              <StackPanel x:Name="RecentList" />
+              <TextBlock x:Name="RecentEmptyText" Visibility="Collapsed"
+                         FontSize="12" TextWrapping="Wrap"
+                         Text="还没有阅读进度记录。"
+                         Foreground="{DynamicResource TextTertiaryBrush}" />
+            </StackPanel>
+          </Border>
+
+        </StackPanel>
+      </ScrollViewer>
+
+      <c:EmptyState x:Name="EmptyView" Visibility="Collapsed"
+                    IconGlyph="{StaticResource IconGlyphStats}"
+                    Title="还没有阅读记录"
+                    Body="去书库打开一本书——时长、连续天数与阅读速度都会从翻开第一页开始记。" />
+
+      <c:LoadingState x:Name="LoadingView" Visibility="Collapsed"
+                      Text="正在读取阅读统计…" />
+
+      <c:ErrorState x:Name="ErrorView" Visibility="Collapsed"
+                    Title="统计读不出来" />
+    </Grid>
+  </Grid>
+</UserControl>

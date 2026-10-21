@@ -1,0 +1,36 @@
+# 换行符策略：由本文件说了算，不依赖 core.autocrlf
+# 文档/配置/脚本一律 LF（便于字节级校验与跨平台）
+# C# / XAML / 项目文件用 CRLF（Visual Studio 默认）
+* text=auto
+*.md      text eol=lf
+*.json    text eol=lf
+*.txt     text eol=lf
+*.ps1     text eol=lf
+*.sql     text eol=lf
+*.css     text eol=lf
+*.js      text eol=lf
+*.html    text eol=lf
+*.cs      text eol=crlf
+*.xaml    text eol=crlf
+*.csproj  text eol=crlf
+*.sln     text eol=crlf
+*.props   text eol=crlf
+*.targets text eol=crlf
+# 二进制（禁止任何转换）
+*.jpg  binary
+*.jpeg binary
+*.png  binary
+*.gif  binary
+*.webp binary
+*.ttf  binary
+*.otf  binary
+*.woff binary
+*.woff2 binary
+*.zip  binary
+*.epub binary
+*.mobi binary
+*.azw3 binary
+*.dll  binary
+*.exe  binary
+# 发布产物目录（若存在）：精确保留发布时的原始字节，不做文本/行尾转换
+dist/** -text

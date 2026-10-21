@@ -1,0 +1,144 @@
+<Window x:Class="EbookToolSuite.App.Views.DataMigrationWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="更改数据目录" Height="720" Width="860"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
+        Background="{DynamicResource WindowBackgroundBrush}">
+  <Grid Margin="20">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="*" />
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="Auto" />
+    </Grid.RowDefinitions>
+
+    <!-- 标题 -->
+    <StackPanel Grid.Row="0">
+      <TextBlock Text="更改数据目录" FontSize="20" FontWeight="SemiBold"
+                 Foreground="{DynamicResource TextPrimaryBrush}" />
+      <TextBlock Margin="0,6,0,0" FontSize="12" TextWrapping="Wrap"
+                 Foreground="{DynamicResource TextSecondaryBrush}"
+                 Text="把书库、配置与备份整体搬到一个新位置。复制完成后会逐文件校验，校验失败或取消都会回滚；迁移完成后需要重启程序才生效。" />
+    </StackPanel>
+
+    <!-- 当前数据目录 -->
+    <Border Grid.Row="1" Style="{StaticResource CardStyle}" Margin="0,14,0,12">
+      <StackPanel>
+        <TextBlock Style="{StaticResource CardTitleStyle}" Text="当前数据目录" />
+        <Grid>
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
+          </Grid.ColumnDefinitions>
+          <TextBlock x:Name="CurrentDirText" Style="{StaticResource MonoTextStyle}"
+                     TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+          <Button Grid.Column="1" x:Name="OpenCurrentButton" Content="打开所在文件夹"
+                  Margin="12,0,0,0" Click="OnOpenCurrentClick" />
+        </Grid>
+        <TextBlock x:Name="CurrentUsageText" Margin="0,8,0,0" FontSize="12"
+                   Foreground="{DynamicResource TextTertiaryBrush}" Text="正在统计占用…" />
+      </StackPanel>
+    </Border>
+
+    <!-- 目标目录 -->
+    <StackPanel Grid.Row="2">
+      <TextBlock Text="新的数据目录" FontSize="13" FontWeight="SemiBold"
+                 Foreground="{DynamicResource TextPrimaryBrush}" />
+      <Grid Margin="0,8,0,0">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="*" />
+          <ColumnDefinition Width="Auto" />
+          <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+        <TextBox x:Name="TargetBoxControl" VerticalAlignment="Center"
+                 TextChanged="OnTargetTextChanged" />
+        <Button Grid.Column="1" x:Name="BrowseButtonControl" Content="浏览…"
+                Margin="8,0,0,0" Click="OnBrowseClick" />
+        <Button Grid.Column="2" x:Name="CheckButtonControl" Content="检查"
+                Style="{StaticResource PrimaryButtonStyle}" Margin="8,0,0,0"
+                Click="OnCheckClick" />
+      </Grid>
+      <TextBlock Margin="0,6,0,0" FontSize="12" TextWrapping="Wrap"
+                 Foreground="{DynamicResource TextTertiaryBrush}"
+                 Text="请选择本机固定盘上的空目录（网络盘 / 可移动盘上 SQLite 的 WAL 不可靠，会被前置检查拦下）。" />
+
+      <CheckBox x:Name="IncludeCachesCheck" Margin="0,10,0,0"
+                Content="连缓存一起搬（Cache / Temp）" />
+
+      <!-- 目标已经是数据目录时：给出"直接切换"，避免用户以为只能重装 -->
+      <StackPanel x:Name="SwitchPanel" Margin="0,10,0,0" Visibility="Collapsed">
+        <TextBlock FontSize="12" TextWrapping="Wrap" Foreground="{DynamicResource WarningBrush}"
+                   Text="目标目录已经是一个数据目录（里面有 Config.json 或 Library.db），不能再往里复制。" />
+        <Button x:Name="SwitchButtonControl" Content="直接切换到该目录…"
+                HorizontalAlignment="Left" Margin="0,8,0,0"
+                Click="OnSwitchClick" />
+      </StackPanel>
+    </StackPanel>
+
+    <!-- 前置检查清单 -->
+    <ScrollViewer Grid.Row="3" Margin="0,14,0,0" VerticalScrollBarVisibility="Auto">
+      <StackPanel>
+        <TextBlock x:Name="CheckSummaryText" Margin="0,0,0,8" FontSize="12" TextWrapping="Wrap"
+                   Foreground="{DynamicResource TextTertiaryBrush}"
+                   Text="还没有检查。填好目标目录后点「检查」。" />
+        <ItemsControl x:Name="ChecksList">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate>
+              <Border Style="{StaticResource CardStyle}" Margin="0,0,0,8" Padding="12">
+                <Grid>
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="26" />
+                    <ColumnDefinition Width="*" />
+                  </Grid.ColumnDefinitions>
+                  <TextBlock Text="{Binding Mark}" Foreground="{Binding MarkBrush}"
+                             FontSize="14" FontWeight="Bold" VerticalAlignment="Top" />
+                  <StackPanel Grid.Column="1">
+                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextPrimaryBrush}" />
+                    <TextBlock Text="{Binding Message}" Margin="0,4,0,0" FontSize="12"
+                               TextWrapping="Wrap"
+                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                  </StackPanel>
+                </Grid>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </StackPanel>
+    </ScrollViewer>
+
+    <!-- 进度 -->
+    <StackPanel Grid.Row="4" x:Name="ProgressPanel" Margin="0,8,0,0" Visibility="Collapsed">
+      <ProgressBar x:Name="ProgressBarControl" Height="6" Minimum="0" Maximum="100" />
+      <TextBlock x:Name="ProgressText" Margin="0,6,0,0" FontSize="12" TextWrapping="Wrap"
+                 Foreground="{DynamicResource TextSecondaryBrush}" />
+    </StackPanel>
+
+    <!-- 结果 / 重启 -->
+    <StackPanel Grid.Row="5" Margin="0,10,0,0">
+      <TextBlock x:Name="StatusText" FontSize="13" TextWrapping="Wrap" />
+      <StackPanel x:Name="RestartPanel" Orientation="Horizontal" Margin="0,10,0,0"
+                  Visibility="Collapsed">
+        <Button x:Name="RestartNowButton" Content="立即重启"
+                Style="{StaticResource PrimaryButtonStyle}" Click="OnRestartNowClick" />
+        <Button x:Name="RestartLaterButton" Content="稍后重启" Margin="8,0,0,0"
+                Click="OnRestartLaterClick" />
+      </StackPanel>
+    </StackPanel>
+
+    <!-- 底部按钮 -->
+    <StackPanel Grid.Row="6" Orientation="Horizontal" HorizontalAlignment="Right"
+                Margin="0,14,0,0">
+      <Button x:Name="CancelButtonControl" Content="取消迁移" Visibility="Collapsed"
+              Style="{StaticResource DangerButtonStyle}" Click="OnCancelClick" />
+      <Button x:Name="CloseButtonControl" Content="关闭" Margin="8,0,0,0"
+              Click="OnCloseClick" />
+      <Button x:Name="StartButtonControl" Content="开始迁移" Margin="8,0,0,0"
+              Style="{StaticResource PrimaryButtonStyle}" IsEnabled="False"
+              Click="OnStartClick" />
+    </StackPanel>
+  </Grid>
+</Window>

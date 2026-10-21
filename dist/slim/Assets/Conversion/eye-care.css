@@ -1,0 +1,60 @@
+/* 护眼样式。mobile-readable 模板通过 --extra-css 把它注入 EPUB。
+   只调排版观感，不改任何正文内容；安卓阅读器（静读天下 / Librera / Moon+ 等）
+   一般都会保留这份附加样式。 */
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background-color: #F7F2E7;
+  color: #2B2B2B;
+  margin: 0 6%;
+  line-height: 1.7;
+  font-family: "Noto Serif CJK SC", "Source Han Serif SC", "Songti SC", serif;
+  text-align: left;
+}
+
+p {
+  margin: 0 0 0.85em 0;
+  text-indent: 2em;
+  text-align: left;
+  word-wrap: break-word;
+}
+h1, h2, h3, h4 {
+  color: #1F1F1F;
+  line-height: 1.35;
+  margin: 1.4em 0 0.6em 0;
+  text-indent: 0;
+  font-weight: 600;
+  page-break-after: avoid;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+blockquote {
+  margin: 0.8em 1.5em;
+  color: #4A4A4A;
+  border-left: 3px solid #C9BDA6;
+  padding-left: 0.9em;
+  text-indent: 0;
+}
+
+a {
+  color: #1A5FB4;
+}
+
+/* 有些阅读器会整体反色，保证反色后仍然能读。 */
+@media (prefers-color-scheme: dark) {
+  body {
+    background-color: #1E1E1E;
+    color: #D6D6D6;
+  }
+
+  h1, h2, h3, h4 {
+    color: #F0F0F0;
+  }
+}

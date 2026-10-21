@@ -1,0 +1,534 @@
+﻿<UserControl x:Class="EbookToolSuite.App.Views.Pages.SettingsPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <UserControl.Resources>
+    <!-- 设置行的统一排版：左标签固定 110，右侧放控件与说明。
+         字号 / 圆角只取 T7-3 审计允许的档位（11/12/13/14/20，4/6/8/10）。 -->
+    <Style x:Key="SettingsRowLabelStyle" TargetType="TextBlock">
+      <Setter Property="FontSize" Value="13" />
+      <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="Margin" Value="0,0,16,0" />
+    </Style>
+    <Style x:Key="SettingsHintStyle" TargetType="TextBlock">
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="Foreground" Value="{DynamicResource TextTertiaryBrush}" />
+      <Setter Property="TextWrapping" Value="Wrap" />
+      <Setter Property="Margin" Value="0,6,0,0" />
+    </Style>
+    <Style x:Key="SettingsDescriptionStyle" TargetType="TextBlock">
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+      <Setter Property="TextWrapping" Value="Wrap" />
+      <Setter Property="Margin" Value="0,0,0,12" />
+    </Style>
+  </UserControl.Resources>
+
+  <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+    <StackPanel Margin="24" MaxWidth="760" HorizontalAlignment="Left">
+
+      <TextBlock Text="设置" FontSize="20" FontWeight="SemiBold"
+                 Foreground="{DynamicResource TextPrimaryBrush}" />
+      <TextBlock Margin="0,6,0,16" FontSize="12" TextWrapping="Wrap"
+                 Foreground="{DynamicResource TextSecondaryBrush}"
+                 Text="所有设置改完立刻写进 Config.json，不需要点保存。标了「重启后生效」的项要关掉程序再开。" />
+
+      <!-- ========== 外观（T7-3）：主题六档 + 强调色 + 自定义配色 ========== -->
+      <Border Style="{StaticResource CardStyle}">
+        <StackPanel>
+          <TextBlock x:Name="AppearanceGroupTitle" Style="{StaticResource CardTitleStyle}" Text="外观" />
+
+          <TextBlock Text="主题" FontSize="12" Margin="0,0,0,8"
+                     Foreground="{DynamicResource TextSecondaryBrush}" />
+          <StackPanel Orientation="Horizontal">
+            <RadioButton x:Name="ThemeSystemRadio" Content="跟随系统" Tag="system" />
+            <RadioButton x:Name="ThemeLightRadio" Content="亮色" Tag="light" />
+            <RadioButton x:Name="ThemeSepiaRadio" Content="米黄色" Tag="sepia" />
+            <RadioButton x:Name="ThemeDarkRadio" Content="暗色" Tag="dark" />
+            <RadioButton x:Name="ThemeGreenRadio" Content="护眼绿" Tag="green" />
+            <RadioButton x:Name="ThemeCustomRadio" Content="自定义" Tag="custom" />
+          </StackPanel>
+
+          <!-- 自定义配色（用户 2026-10-21 要求）：选中「自定义」后出现在这排按钮的正下方。
+               点色块弹调色板，也可以直接填 #RRGGBB；改完立刻生效并写 Config.json。 -->
+          <StackPanel x:Name="CustomThemePanel" Margin="0,14,0,0" Visibility="Collapsed">
+            <TextBlock FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"
+                       Text="自定义配色：点色块选颜色，也可以填 #RRGGBB，改完立刻生效。" />
+            <Grid Margin="0,10,0,0">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="76" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+              </Grid.ColumnDefinitions>
+              <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+              </Grid.RowDefinitions>
+
+              <TextBlock Grid.Row="0" Grid.Column="0" Style="{StaticResource SettingsRowLabelStyle}" Text="窗口底色" />
+              <Button x:Name="CustomBackgroundButton" Grid.Row="0" Grid.Column="1" Tag="background"
+                      Width="44" Height="22" Padding="0" Margin="0,4,0,4" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
+                      ToolTip="选择窗口底色" Click="OnCustomColorButtonClick">
+                <Border x:Name="CustomBackgroundSwatch" BorderThickness="1"
+                        BorderBrush="{DynamicResource BorderSubtleBrush}" CornerRadius="4" Width="40" Height="18" />
+              </Button>
+              <TextBox x:Name="CustomBackgroundHex" Grid.Row="0" Grid.Column="2" Width="96" Margin="10,4,0,4"
+                       FontSize="12" CharacterCasing="Upper"
+                       KeyDown="OnCustomHexKeyDown" LostFocus="OnCustomHexLostFocus" />
+
+              <TextBlock Grid.Row="1" Grid.Column="0" Style="{StaticResource SettingsRowLabelStyle}" Text="卡片底色" />
+              <Button x:Name="CustomCardButton" Grid.Row="1" Grid.Column="1" Tag="card"
+                      Width="44" Height="22" Padding="0" Margin="0,4,0,4" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
+                      ToolTip="选择卡片底色" Click="OnCustomColorButtonClick">
+                <Border x:Name="CustomCardSwatch" BorderThickness="1"
+                        BorderBrush="{DynamicResource BorderSubtleBrush}" CornerRadius="4" Width="40" Height="18" />
+              </Button>
+              <TextBox x:Name="CustomCardHex" Grid.Row="1" Grid.Column="2" Width="96" Margin="10,4,0,4"
+                       FontSize="12" CharacterCasing="Upper"
+                       KeyDown="OnCustomHexKeyDown" LostFocus="OnCustomHexLostFocus" />
+
+              <TextBlock Grid.Row="2" Grid.Column="0" Style="{StaticResource SettingsRowLabelStyle}" Text="文字颜色" />
+              <Button x:Name="CustomTextButton" Grid.Row="2" Grid.Column="1" Tag="text"
+                      Width="44" Height="22" Padding="0" Margin="0,4,0,4" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
+                      ToolTip="选择正文文字颜色" Click="OnCustomColorButtonClick">
+                <Border x:Name="CustomTextSwatch" BorderThickness="1"
+                        BorderBrush="{DynamicResource BorderSubtleBrush}" CornerRadius="4" Width="40" Height="18" />
+              </Button>
+              <TextBox x:Name="CustomTextHex" Grid.Row="2" Grid.Column="2" Width="96" Margin="10,4,0,4"
+                       FontSize="12" CharacterCasing="Upper"
+                       KeyDown="OnCustomHexKeyDown" LostFocus="OnCustomHexLostFocus" />
+
+              <TextBlock Grid.Row="3" Grid.Column="0" Style="{StaticResource SettingsRowLabelStyle}" Text="强调色" />
+              <Button x:Name="CustomAccentButton" Grid.Row="3" Grid.Column="1" Tag="accent"
+                      Width="44" Height="22" Padding="0" Margin="0,4,0,4" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
+                      ToolTip="选择强调色（按钮、选中项）" Click="OnCustomColorButtonClick">
+                <Border x:Name="CustomAccentSwatch" BorderThickness="1"
+                        BorderBrush="{DynamicResource BorderSubtleBrush}" CornerRadius="4" Width="40" Height="18" />
+              </Button>
+              <TextBox x:Name="CustomAccentHex" Grid.Row="3" Grid.Column="2" Width="96" Margin="10,4,0,4"
+                       FontSize="12" CharacterCasing="Upper"
+                       KeyDown="OnCustomHexKeyDown" LostFocus="OnCustomHexLostFocus" />
+            </Grid>
+            <TextBlock Style="{StaticResource SettingsHintStyle}"
+                       Text="描边、二级/三级文字与悬停色会按这四个颜色自动推导；窗口底色偏深时自动按暗色规则推导其余颜色。" />
+          </StackPanel>
+
+          <!-- 调色板：点色块后贴在按钮下方弹出；24 个常用色 + 手填色值 -->
+          <Popup x:Name="ColorPalettePopup" StaysOpen="False" AllowsTransparency="True"
+                 Placement="Bottom" VerticalOffset="4">
+            <Border Background="{DynamicResource CardBackgroundBrush}"
+                    BorderBrush="{DynamicResource BorderSubtleBrush}" BorderThickness="1"
+                    CornerRadius="8" Padding="12">
+              <StackPanel>
+                <TextBlock x:Name="ColorPaletteTitle" FontSize="12" Text="选择颜色"
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
+                <WrapPanel x:Name="ColorPalettePanel" Width="240" Margin="0,8,0,0" />
+                <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                  <TextBlock Text="色值" FontSize="12" VerticalAlignment="Center"
+                             Foreground="{DynamicResource TextSecondaryBrush}" />
+                  <TextBox x:Name="ColorPaletteHexBox" Width="96" Margin="8,0,0,0" FontSize="12"
+                           CharacterCasing="Upper"
+                           KeyDown="OnPaletteHexKeyDown" LostFocus="OnPaletteHexLostFocus" />
+                  <TextBlock Text="#RRGGBB" FontSize="11" Margin="8,0,0,0" VerticalAlignment="Center"
+                             Foreground="{DynamicResource TextTertiaryBrush}" />
+                </StackPanel>
+              </StackPanel>
+            </Border>
+          </Popup>
+
+          <CheckBox x:Name="AccentFollowCheck" Margin="0,16,0,0" FontSize="13"
+                    Content="强调色跟随系统" />
+
+          <TextBlock x:Name="ThemeHintText" Margin="0,12,0,0" FontSize="12"
+                     TextWrapping="Wrap" Foreground="{DynamicResource TextTertiaryBrush}"
+                     Text="跟随时，系统切到深色后 5 秒内自动跟随；米黄色与护眼绿只能手动选。强调色对比度不足时会自动回退默认蓝。" />
+        </StackPanel>
+      </Border>
+
+      <!-- ========== 常规 ========== -->
+      <Border Style="{StaticResource CardStyle}">
+        <StackPanel>
+          <TextBlock x:Name="GeneralGroupTitle" Style="{StaticResource CardTitleStyle}" Text="常规" />
+
+          <Grid Margin="0,0,0,14">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="110" />
+              <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" Style="{StaticResource SettingsRowLabelStyle}" Text="语言" />
+            <ComboBox x:Name="LanguageCombo" Grid.Column="1" MinWidth="200"
+                      HorizontalAlignment="Left" SelectionChanged="OnLanguageChanged">
+              <ComboBoxItem Content="简体中文" Tag="zh-CN" />
+            </ComboBox>
+          </Grid>
+
+          <CheckBox x:Name="OpenLastBookCheck" FontSize="13"
+                    Content="启动时打开上次读的那本书"
+                    Checked="OnOpenLastBookChanged" Unchecked="OnOpenLastBookChanged" />
+          <TextBlock Style="{StaticResource SettingsHintStyle}"
+                     Text="关掉时启动后停在书库首页；开着会直接打开上次读的那本，并从上次的位置继续。" />
+        </StackPanel>
+      </Border>
+
+      <!-- ========== 书库 ========== -->
+      <Border Style="{StaticResource CardStyle}">
+        <StackPanel>
+          <TextBlock x:Name="LibraryGroupTitle" Style="{StaticResource CardTitleStyle}" Text="书库" />
+
+          <Grid Margin="0,0,0,14">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="110" />
+              <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" Style="{StaticResource SettingsRowLabelStyle}" Text="数据目录" />
+            <StackPanel Grid.Column="1">
+              <TextBlock x:Name="DataDirText" Style="{StaticResource MonoTextStyle}" TextWrapping="Wrap" />
+              <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                <Button x:Name="ChangeDataDirButton" Content="更改数据目录…"
+                        Style="{StaticResource SecondaryButtonStyle}"
+                        Click="OnChangeDataDirClick"
+                        ToolTip="把书库、配置、备份整体迁到另一个目录（迁移完成后需要重启）" />
+                <Button x:Name="DeleteOldDataButton" Content="删除旧数据目录" Margin="8,0,0,0"
+                        Style="{StaticResource DangerButtonStyle}" Visibility="Collapsed"
+                        Click="OnDeleteOldDataClick" />
+              </StackPanel>
+            </StackPanel>
+          </Grid>
+
+          <Grid Margin="0,0,0,14">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="110" />
+              <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" Style="{StaticResource SettingsRowLabelStyle}" Text="书库视图" />
+            <ComboBox x:Name="LibraryViewCombo" Grid.Column="1" MinWidth="160"
+                      HorizontalAlignment="Left" SelectionChanged="OnLibraryViewChanged">
+              <ComboBoxItem Content="网格视图" Tag="grid" />
+              <ComboBoxItem Content="列表视图" Tag="list" />
+            </ComboBox>
+          </Grid>
+
+          <Grid Margin="0,0,0,14">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="110" />
+              <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" Style="{StaticResource SettingsRowLabelStyle}" Text="封面尺寸" />
+            <ComboBox x:Name="CoverSizeCombo" Grid.Column="1" MinWidth="160"
+                      HorizontalAlignment="Left" SelectionChanged="OnCoverSizeChanged">
+              <ComboBoxItem Content="小（120 × 160）" Tag="small" />
+              <ComboBoxItem Content="中（150 × 200，默认）" Tag="medium" />
+              <ComboBoxItem Content="大（190 × 253）" Tag="large" />
+            </ComboBox>
+          </Grid>
+
+          <CheckBox x:Name="AutoScanCheck" FontSize="13"
+                    Content="自动扫描书库目录变化"
+                    Checked="OnAutoScanChanged" Unchecked="OnAutoScanChanged" />
+          <TextBlock Style="{StaticResource SettingsHintStyle}"
+                     Text="开启后，书库目录里的文件变化会提示重新扫描；只是提示，真正的判定仍然靠全量扫描。" />
+        </StackPanel>
+      </Border>
+
+      <!-- ========== 转换 ========== -->
+      <Border Style="{StaticResource CardStyle}">
+        <StackPanel>
+          <TextBlock x:Name="ConvertGroupTitle" Style="{StaticResource CardTitleStyle}" Text="转换" />
+
+          <Grid Margin="0,0,0,14">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="110" />
+              <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" Style="{StaticResource SettingsRowLabelStyle}" Text="默认输出格式" />
+            <ComboBox x:Name="DefaultFormatCombo" Grid.Column="1" MinWidth="220"
+                      HorizontalAlignment="Left" SelectionChanged="OnDefaultFormatChanged">
+              <ComboBoxItem Content="EPUB（推荐，可重排）" Tag="epub" />
+              <ComboBoxItem Content="MOBI（部分安卓阅读器）" Tag="mobi" />
+              <ComboBoxItem Content="PDF（固定版式）" Tag="pdf" />
+              <ComboBoxItem Content="TXT（纯文本）" Tag="txt" />
+            </ComboBox>
+          </Grid>
+
+          <Grid Margin="0,0,0,14">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="110" />
+              <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" Style="{StaticResource SettingsRowLabelStyle}" Text="并发数" />
+            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+              <TextBox x:Name="MaxParallelBox" Width="90" MaxLength="2" Tag="maxParallel"
+                       TextChanged="OnIntTextChanged" LostFocus="OnIntLostFocus" KeyDown="OnIntKeyDown" />
+              <Button x:Name="MaxParallelUpButton" Content="▲" Width="32" Padding="0" Margin="6,0,0,0"
+                      Tag="maxParallel:+1" Click="OnStepperClick" ToolTip="加 1" />
+              <Button x:Name="MaxParallelDownButton" Content="▼" Width="32" Padding="0" Margin="4,0,0,0"
+                      Tag="maxParallel:-1" Click="OnStepperClick" ToolTip="减 1" />
+              <TextBlock Margin="10,0,0,0" VerticalAlignment="Center" FontSize="12"
+                         Foreground="{DynamicResource TextSecondaryBrush}" Text="1–4" />
+            </StackPanel>
+          </Grid>
+          <TextBlock x:Name="ParallelWarnText" Margin="126,0,0,14" FontSize="12"
+                     TextWrapping="Wrap" Visibility="Collapsed"
+                     Foreground="{DynamicResource WarningBrush}"
+                     Text="并发 &gt; 1 可能导致内存不足；重启后生效。" />
+
+          <Grid Margin="0,0,0,14">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="110" />
+              <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" Style="{StaticResource SettingsRowLabelStyle}" Text="超时时间" />
+            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+              <TextBox x:Name="TimeoutMinutesBox" Width="90" MaxLength="5" Tag="timeout"
+                       TextChanged="OnIntTextChanged" LostFocus="OnIntLostFocus" KeyDown="OnIntKeyDown" />
+              <Button x:Name="TimeoutMinutesUpButton" Content="▲" Width="32" Padding="0" Margin="6,0,0,0"
+                      Tag="timeout:+1" Click="OnStepperClick" ToolTip="加 1 分钟" />
+              <Button x:Name="TimeoutMinutesDownButton" Content="▼" Width="32" Padding="0" Margin="4,0,0,0"
+                      Tag="timeout:-1" Click="OnStepperClick" ToolTip="减 1 分钟" />
+              <TextBlock Margin="10,0,0,0" VerticalAlignment="Center" FontSize="12"
+                         Foreground="{DynamicResource TextSecondaryBrush}" Text="分钟（1–1440，默认 60）" />
+            </StackPanel>
+          </Grid>
+
+          <TextBlock Style="{StaticResource SettingsHintStyle}"
+                     Text="模板管理：在「转换」窗口里用「另存为模板 / 删除模板」维护，内置模板不受影响。这里不另开窗口。" />
+        </StackPanel>
+      </Border>
+
+      <!-- ========== 阅读 ========== -->
+      <Border Style="{StaticResource CardStyle}">
+        <StackPanel>
+          <TextBlock x:Name="ReadingGroupTitle" Style="{StaticResource CardTitleStyle}" Text="阅读" />
+
+          <Grid Margin="0,0,0,14">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="110" />
+              <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" Style="{StaticResource SettingsRowLabelStyle}" Text="默认主题" />
+            <ComboBox x:Name="ReaderThemeCombo" Grid.Column="1" MinWidth="160"
+                      HorizontalAlignment="Left" SelectionChanged="OnReaderThemeChanged">
+              <ComboBoxItem Content="白" Tag="light" />
+              <ComboBoxItem Content="米黄" Tag="sepia" />
+              <ComboBoxItem Content="深灰" Tag="dark" />
+              <ComboBoxItem Content="护眼绿" Tag="green" />
+            </ComboBox>
+          </Grid>
+
+          <Grid Margin="0,0,0,14">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="110" />
+              <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" Style="{StaticResource SettingsRowLabelStyle}" Text="字号" />
+            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+              <TextBox x:Name="FontSizeBox" Width="90" MaxLength="2" Tag="fontSize"
+                       TextChanged="OnIntTextChanged" LostFocus="OnIntLostFocus" KeyDown="OnIntKeyDown" />
+              <Button x:Name="FontSizeUpButton" Content="▲" Width="32" Padding="0" Margin="6,0,0,0"
+                      Tag="fontSize:+1" Click="OnStepperClick" ToolTip="加 1 号" />
+              <Button x:Name="FontSizeDownButton" Content="▼" Width="32" Padding="0" Margin="4,0,0,0"
+                      Tag="fontSize:-1" Click="OnStepperClick" ToolTip="减 1 号" />
+              <TextBlock Margin="10,0,0,0" VerticalAlignment="Center" FontSize="12"
+                         Foreground="{DynamicResource TextSecondaryBrush}" Text="12–36（默认 17）" />
+            </StackPanel>
+          </Grid>
+
+          <Grid Margin="0,0,0,14">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="110" />
+              <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" Style="{StaticResource SettingsRowLabelStyle}" Text="字体" />
+            <ComboBox x:Name="FontFamilyBox" Grid.Column="1" MinWidth="240" HorizontalAlignment="Left"
+                      SelectionChanged="OnFontFamilySelectionChanged"
+                      ToolTip="从系统已安装字体里选择" />
+          </Grid>
+
+          <Grid Margin="0,0,0,14">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="110" />
+              <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" Style="{StaticResource SettingsRowLabelStyle}" Text="行高" />
+            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+              <TextBox x:Name="LineHeightBox" Width="90" MaxLength="4" Tag="lineHeight"
+                       TextChanged="OnLineHeightChanged" LostFocus="OnLineHeightLostFocus" KeyDown="OnLineHeightKeyDown" />
+              <Button x:Name="LineHeightUpButton" Content="▲" Width="32" Padding="0" Margin="6,0,0,0"
+                      Tag="lineHeight:+0.1" Click="OnStepperClick" ToolTip="加 0.1" />
+              <Button x:Name="LineHeightDownButton" Content="▼" Width="32" Padding="0" Margin="4,0,0,0"
+                      Tag="lineHeight:-0.1" Click="OnStepperClick" ToolTip="减 0.1" />
+              <TextBlock Margin="10,0,0,0" VerticalAlignment="Center" FontSize="12"
+                         Foreground="{DynamicResource TextSecondaryBrush}" Text="1.2–2.5（默认 1.75）" />
+            </StackPanel>
+          </Grid>
+
+          <CheckBox x:Name="PaginationCheck" FontSize="13" Margin="0,0,0,14"
+                    Content="分页阅读模式（默认滚动）"
+                    Checked="OnPaginationChanged" Unchecked="OnPaginationChanged" />
+
+          <Grid Margin="0,0,0,14">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="110" />
+              <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" Style="{StaticResource SettingsRowLabelStyle}" Text="预加载页数" />
+            <StackPanel Grid.Column="1">
+              <StackPanel Orientation="Horizontal">
+                <TextBox x:Name="PreloadBox" Width="90" MaxLength="4" TextChanged="OnPreloadTextChanged"
+                         LostFocus="OnPreloadLostFocus" KeyDown="OnPreloadKeyDown"
+                         ToolTip="1–1000；PDF 与漫画连续滚动时提前加载的页数" />
+                <Button x:Name="PreloadUpButton" Content="▲" Width="32" Padding="0" Margin="6,0,0,0"
+                        Click="OnPreloadUpClick" ToolTip="加 1 页" />
+                <Button x:Name="PreloadDownButton" Content="▼" Width="32" Padding="0" Margin="4,0,0,0"
+                        Click="OnPreloadDownClick" ToolTip="减 1 页" />
+              </StackPanel>
+              <TextBlock x:Name="PreloadHintText" Style="{StaticResource SettingsHintStyle}"
+                         Text="范围 1–1000 页（默认 10）。数字越大滚动越流畅，但占更多内存；PDF 与漫画共用这一项。" />
+            </StackPanel>
+          </Grid>
+
+          <TextBlock Style="{StaticResource SettingsDescriptionStyle}" Margin="0,0,0,0"
+                     Text="快捷键：← / → 翻章翻页，PageUp / PageDown 翻页，T 目录，Ctrl+F 搜索，Ctrl+B 加书签，F11 全屏。" />
+        </StackPanel>
+      </Border>
+
+      <!-- ========== 工具 ========== -->
+      <Border Style="{StaticResource CardStyle}">
+        <StackPanel>
+          <TextBlock x:Name="ToolsGroupTitle" Style="{StaticResource CardTitleStyle}" Text="工具" />
+
+          <StackPanel x:Name="ToolRowsPanel" Margin="0,0,0,12" />
+          <Button x:Name="RecheckToolsButton" Content="重新检测" HorizontalAlignment="Left"
+                  Style="{StaticResource SecondaryButtonStyle}"
+                  Click="OnRecheckToolsClick"
+                  ToolTip="重新检查 Calibre / JRE / EpubCheck / WebView2 的存在性与版本" />
+          <TextBlock Style="{StaticResource SettingsHintStyle}"
+                     Text="工具放在程序目录的 Tools/ 下；缺失时按上面的提示安装或放回原处，然后点「重新检测」。" />
+        </StackPanel>
+      </Border>
+
+      <!-- ========== 缓存 ========== -->
+      <Border Style="{StaticResource CardStyle}">
+        <StackPanel>
+          <TextBlock x:Name="CacheGroupTitle" Style="{StaticResource CardTitleStyle}" Text="缓存" />
+
+          <Grid Margin="0,0,0,14">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="110" />
+              <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" Style="{StaticResource SettingsRowLabelStyle}" Text="位置" />
+            <TextBlock x:Name="CachePathText" Grid.Column="1" Style="{StaticResource MonoTextStyle}" TextWrapping="Wrap" />
+          </Grid>
+
+          <Grid Margin="0,0,0,14">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="110" />
+              <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" Style="{StaticResource SettingsRowLabelStyle}" Text="当前占用" />
+            <TextBlock x:Name="CacheUsageText" Grid.Column="1" FontSize="12" TextWrapping="Wrap"
+                       VerticalAlignment="Center"
+                       Foreground="{DynamicResource TextSecondaryBrush}" Text="正在统计…" />
+          </Grid>
+
+          <Grid Margin="0,0,0,14">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="110" />
+              <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" Style="{StaticResource SettingsRowLabelStyle}" Text="大小上限" />
+            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+              <TextBox x:Name="CacheLimitBox" Width="100" MaxLength="6" Tag="cacheLimit"
+                       TextChanged="OnIntTextChanged" LostFocus="OnIntLostFocus" KeyDown="OnIntKeyDown" />
+              <Button x:Name="CacheLimitUpButton" Content="▲" Width="32" Padding="0" Margin="6,0,0,0"
+                      Tag="cacheLimit:+1" Click="OnStepperClick" ToolTip="加 1 MB" />
+              <Button x:Name="CacheLimitDownButton" Content="▼" Width="32" Padding="0" Margin="4,0,0,0"
+                      Tag="cacheLimit:-1" Click="OnStepperClick" ToolTip="减 1 MB" />
+              <TextBlock Margin="10,0,0,0" VerticalAlignment="Center" FontSize="12"
+                         Foreground="{DynamicResource TextSecondaryBrush}" Text="MB（128–102400，默认 2048）" />
+            </StackPanel>
+          </Grid>
+
+          <Button x:Name="CleanCacheButton" Content="清理缓存" HorizontalAlignment="Left"
+                  Style="{StaticResource SecondaryButtonStyle}"
+                  Click="OnCleanCacheClick"
+                  ToolTip="清空 Data/Cache 里的封面缓存、阅读缓存与 Calibre 临时产物（不动书库）" />
+        </StackPanel>
+      </Border>
+
+      <!-- ========== 备份 ========== -->
+      <Border Style="{StaticResource CardStyle}">
+        <StackPanel>
+          <TextBlock x:Name="BackupGroupTitle" Style="{StaticResource CardTitleStyle}" Text="备份" />
+
+          <Grid Margin="0,0,0,14">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="110" />
+              <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" Style="{StaticResource SettingsRowLabelStyle}" Text="大小上限" />
+            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+              <TextBox x:Name="BackupLimitBox" Width="100" MaxLength="6" Tag="backupLimit"
+                       TextChanged="OnIntTextChanged" LostFocus="OnIntLostFocus" KeyDown="OnIntKeyDown" />
+              <Button x:Name="BackupLimitUpButton" Content="▲" Width="32" Padding="0" Margin="6,0,0,0"
+                      Tag="backupLimit:+1" Click="OnStepperClick" ToolTip="加 1 MB" />
+              <Button x:Name="BackupLimitDownButton" Content="▼" Width="32" Padding="0" Margin="4,0,0,0"
+                      Tag="backupLimit:-1" Click="OnStepperClick" ToolTip="减 1 MB" />
+              <TextBlock Margin="10,0,0,0" VerticalAlignment="Center" FontSize="12"
+                         Foreground="{DynamicResource TextSecondaryBrush}" Text="MB（256–102400，默认 1024）" />
+            </StackPanel>
+          </Grid>
+
+          <StackPanel Orientation="Horizontal">
+            <Button x:Name="BackupNowButton" Content="立即备份"
+                    Style="{StaticResource SecondaryButtonStyle}"
+                    Click="OnBackupNowClick"
+                    ToolTip="把 Library.db 与 Config.json 立刻复制到 Backup/Database/时间戳/ 下" />
+            <Button x:Name="ManageBackupsButton" Content="还原点管理" Margin="8,0,0,0"
+                    Style="{StaticResource SecondaryButtonStyle}"
+                    Click="OnManageBackupsClick"
+                    ToolTip="打开「备份与还原」页，列出所有还原点" />
+          </StackPanel>
+          <TextBlock Style="{StaticResource SettingsHintStyle}"
+                     Text="超出上限时自动清理最旧的还原点；每次保存书籍前也会自动建一个还原点。" />
+        </StackPanel>
+      </Border>
+
+      <!-- ========== 高级 ========== -->
+      <Border Style="{StaticResource CardStyle}">
+        <StackPanel>
+          <TextBlock x:Name="AdvancedGroupTitle" Style="{StaticResource CardTitleStyle}" Text="高级" />
+
+          <Grid Margin="0,0,0,14">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="110" />
+              <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" Style="{StaticResource SettingsRowLabelStyle}" Text="日志级别" />
+            <ComboBox x:Name="LogLevelCombo" Grid.Column="1" MinWidth="160"
+                      HorizontalAlignment="Left" SelectionChanged="OnLogLevelChanged" />
+          </Grid>
+          <TextBlock x:Name="LogLevelHintText" Margin="126,0,0,14" FontSize="12"
+                     TextWrapping="Wrap" Foreground="{DynamicResource TextTertiaryBrush}"
+                     Text="写入 Logs 目录；调成 Debug / Verbose 会明显增大日志量。重启后生效。" />
+
+          <StackPanel Orientation="Horizontal">
+            <Button x:Name="OpenLogsButton" Content="打开日志目录"
+                    Style="{StaticResource SecondaryButtonStyle}"
+                    Click="OnOpenLogsClick" />
+            <Button x:Name="ExportDiagnosticsButton" Content="导出诊断信息" Margin="8,0,0,0"
+                    Style="{StaticResource SecondaryButtonStyle}"
+                    Click="OnExportDiagnosticsClick"
+                    ToolTip="打包脱敏配置 + 最近日志 + 工具体检 + 库统计 + 系统信息，不包含书库内容" />
+          </StackPanel>
+          <TextBlock Style="{StaticResource SettingsHintStyle}"
+                     Text="导出的是排错用的压缩包，不含任何书籍正文；可以把它发给开发者定位问题。" />
+        </StackPanel>
+      </Border>
+
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

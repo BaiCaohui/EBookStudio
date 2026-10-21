@@ -1,0 +1,588 @@
+<Window x:Class="EbookToolSuite.App.Views.CbzPackEditWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:conv="clr-namespace:EbookToolSuite.App.Converters"
+        Title="编辑 CBZ 信息"
+        Height="780" Width="1200" MinHeight="560" MinWidth="940"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource WindowBackgroundBrush}"
+        FocusManager.FocusedElement="{Binding ElementName=ImageList}">
+  <Window.Resources>
+    <!-- 窗口级资源不跨窗口共享（BookEditorWindow 里也是自带一份），
+         所以这两个转换器必须在这里声明，否则 InitializeComponent 直接抛 XamlParseException。 -->
+    <BooleanToVisibilityConverter x:Key="BoolToVis" />
+    <conv:InverseBoolToVisibilityConverter x:Key="InverseBoolToVis" />
+
+    <!-- 图片列表必须整份换成主题令牌：WPF 的 ListBox/ListBoxItem 默认是系统白底 + 系统选中色，
+         深色 / 米黄主题下会变成白底白字看不见（和书籍编辑器的章节列表同一个坑）。 -->
+    <Style x:Key="ImageOrderListStyle" TargetType="ListBox">
+      <Setter Property="Background" Value="{DynamicResource LayerBackgroundBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource BorderSubtleBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="Padding" Value="2" />
+      <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+      <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled" />
+      <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto" />
+    </Style>
+
+    <Style x:Key="ImageOrderItemStyle" TargetType="ListBoxItem">
+      <Setter Property="MinHeight" Value="34" />
+      <Setter Property="Padding" Value="6,4" />
+      <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="ListBoxItem">
+            <Border x:Name="Bg" Margin="1" CornerRadius="4" Background="Transparent"
+                    BorderBrush="Transparent" BorderThickness="1"
+                    Padding="{TemplateBinding Padding}">
+              <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                VerticalAlignment="Center" />
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="Bg" Property="Background"
+                        Value="{DynamicResource SurfaceHoverBrush}" />
+              </Trigger>
+              <Trigger Property="IsSelected" Value="True">
+                <Setter TargetName="Bg" Property="Background"
+                        Value="{DynamicResource AccentSurfaceBrush}" />
+                <Setter TargetName="Bg" Property="BorderBrush"
+                        Value="{DynamicResource AccentColorBrush}" />
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <!-- 行内 ✎：套次级按钮外观但压到 22px，免得把一行撑高 -->
+    <Style x:Key="RowIconButtonStyle" TargetType="Button" BasedOn="{StaticResource SecondaryButtonStyle}">
+      <Setter Property="Height" Value="22" />
+      <Setter Property="Width" Value="24" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="Margin" Value="6,0,0,0" />
+      <Setter Property="Focusable" Value="False" />
+    </Style>
+
+    <!-- 表单：标签右对齐 + 输入框占满（照抄 BookEditorWindow 的两列 Grid 写法） -->
+    <Style x:Key="FormLabelStyle" TargetType="TextBlock">
+      <Setter Property="HorizontalAlignment" Value="Right" />
+      <Setter Property="VerticalAlignment" Value="Top" />
+      <Setter Property="Margin" Value="0,0,8,10" />
+      <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+    </Style>
+
+    <Style x:Key="SectionTitleStyle" TargetType="TextBlock">
+      <Setter Property="FontSize" Value="13" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+      <Setter Property="Margin" Value="0,16,0,8" />
+    </Style>
+
+    <Style x:Key="FieldHintStyle" TargetType="TextBlock">
+      <Setter Property="FontSize" Value="11" />
+      <Setter Property="TextWrapping" Value="Wrap" />
+      <Setter Property="Margin" Value="0,4,0,0" />
+      <Setter Property="Foreground" Value="{DynamicResource TextTertiaryBrush}" />
+    </Style>
+  </Window.Resources>
+
+  <Grid Margin="20">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="*" />
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="Auto" />
+    </Grid.RowDefinitions>
+
+    <!-- 抬头：大字号标题 + 小字文件夹路径（和书籍信息编辑窗一致） -->
+    <StackPanel Grid.Row="0" Margin="0,0,0,14">
+      <TextBlock Text="编辑 CBZ 信息" FontSize="20" FontWeight="SemiBold"
+                 Foreground="{DynamicResource TextPrimaryBrush}" />
+      <TextBlock Margin="0,6,0,0" FontSize="12" TextWrapping="Wrap"
+                 Foreground="{DynamicResource TextSecondaryBrush}"
+                 Text="{Binding SourceLine}" />
+    </StackPanel>
+
+    <Grid Grid.Row="1">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="1.05*" MinWidth="330" />
+        <ColumnDefinition Width="4" />
+        <ColumnDefinition Width="0.95*" MinWidth="400" />
+      </Grid.ColumnDefinitions>
+
+      <GridSplitter Grid.Column="1" Width="4" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                    Background="{DynamicResource BorderSubtleBrush}"
+                    ResizeDirection="Columns" ResizeBehavior="PreviousAndNext"
+                    ToolTip="拖动调整左右两栏的宽度" />
+
+      <!-- ================= 左：图片顺序 ================= -->
+      <Grid Grid.Column="0" Margin="0,0,18,0">
+        <Grid.RowDefinitions>
+          <RowDefinition Height="Auto" />
+          <RowDefinition Height="Auto" />
+          <RowDefinition Height="*" />
+          <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0" Orientation="Horizontal">
+          <TextBlock Text="图片顺序" FontSize="14" FontWeight="SemiBold"
+                     Foreground="{DynamicResource TextPrimaryBrush}" />
+          <TextBlock Margin="8,0,0,0" VerticalAlignment="Center" FontSize="11"
+                     Foreground="{DynamicResource TextTertiaryBrush}"
+                     Text="{Binding CountText}" />
+        </StackPanel>
+
+        <WrapPanel Grid.Row="1" Margin="0,8,0,0">
+          <Button x:Name="MoveUpButton" Content="↑ 上移" Margin="0,0,6,6"
+                  Style="{StaticResource SecondaryButtonStyle}" Click="OnMoveUpClick"
+                  ToolTip="把选中的图片往前挪一位（整个列表会按新顺序重编号包内文件名）" />
+          <Button x:Name="MoveDownButton" Content="↓ 下移" Margin="0,0,6,6"
+                  Style="{StaticResource SecondaryButtonStyle}" Click="OnMoveDownClick"
+                  ToolTip="把选中的图片往后挪一位（整个列表会按新顺序重编号包内文件名）" />
+          <Button x:Name="RenameButton" Content="重命名" Margin="0,0,6,6"
+                  Style="{StaticResource SecondaryButtonStyle}" Click="OnRenameClick"
+                  ToolTip="改选中图片的包内文件名主干（F2 也行）；扩展名固定不变" />
+        </WrapPanel>
+
+        <ListBox x:Name="ImageList" Grid.Row="2" Margin="0,4,0,0"
+                 Style="{StaticResource ImageOrderListStyle}"
+                 ItemContainerStyle="{StaticResource ImageOrderItemStyle}"
+                 ItemsSource="{Binding Items}"
+                 SelectedItem="{Binding SelectedRow, Mode=TwoWay}"
+                 AllowDrop="True"
+                 KeyDown="OnImageListKeyDown"
+                 MouseDoubleClick="OnImageListMouseDoubleClick"
+                 PreviewMouseLeftButtonDown="OnImageListPreviewMouseLeftButtonDown"
+                 PreviewMouseLeftButtonUp="OnImageListPreviewMouseLeftButtonUp"
+                 PreviewMouseMove="OnImageListPreviewMouseMove"
+                 DragOver="OnImageListDragOver"
+                 Drop="OnImageListDrop"
+                 ScrollViewer.VerticalScrollBarVisibility="Auto">
+          <ListBox.ItemTemplate>
+            <DataTemplate>
+              <Grid>
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="34" />
+                  <ColumnDefinition Width="*" />
+                  <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Grid.Column="0" VerticalAlignment="Center" FontSize="11"
+                           Foreground="{DynamicResource TextTertiaryBrush}"
+                           Text="{Binding Position, StringFormat={}{0}.}" />
+
+                <StackPanel Grid.Column="1">
+                  <!-- 正常态：灰色有序前缀（调过序才有）+ 主干名 + 灰色扩展名 -->
+                  <Grid Visibility="{Binding IsEditing, Converter={StaticResource InverseBoolToVis}}">
+                    <Grid.ColumnDefinitions>
+                      <ColumnDefinition Width="Auto" />
+                      <ColumnDefinition Width="*" />
+                      <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0" Text="{Binding OrderPrefix}" FontSize="11"
+                               VerticalAlignment="Center"
+                               Foreground="{DynamicResource TextTertiaryBrush}" />
+                    <TextBlock Grid.Column="1" Text="{Binding Stem}" TextTrimming="CharacterEllipsis"
+                               VerticalAlignment="Center"
+                               Foreground="{DynamicResource TextPrimaryBrush}" />
+                    <TextBlock Grid.Column="2" Text="{Binding Extension}" FontSize="11" Margin="2,0,0,0"
+                               VerticalAlignment="Center"
+                               Foreground="{DynamicResource TextTertiaryBrush}" />
+                  </Grid>
+
+                  <!-- 编辑态：只改主干名，扩展名固定显示在旁边（强制保留） -->
+                  <Grid Visibility="{Binding IsEditing, Converter={StaticResource BoolToVis}}">
+                    <Grid.ColumnDefinitions>
+                      <ColumnDefinition Width="Auto" />
+                      <ColumnDefinition Width="*" />
+                      <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0" Text="{Binding OrderPrefix}" FontSize="11"
+                               VerticalAlignment="Center"
+                               Foreground="{DynamicResource TextTertiaryBrush}" />
+                    <TextBox x:Name="EntryNameBox" Grid.Column="1" Height="26" Padding="6,0" MinWidth="80"
+                             Text="{Binding EditStem, UpdateSourceTrigger=PropertyChanged}"
+                             KeyDown="OnEntryNameBoxKeyDown"
+                             LostKeyboardFocus="OnEntryNameBoxLostKeyboardFocus"
+                             IsVisibleChanged="OnEntryNameBoxIsVisibleChanged" />
+                    <TextBlock Grid.Column="2" Text="{Binding Extension}" FontSize="11" Margin="4,0,0,0"
+                               VerticalAlignment="Center"
+                               Foreground="{DynamicResource TextTertiaryBrush}" />
+                  </Grid>
+
+                  <!-- 校验失败的中文原因：保持编辑态，让用户当场改 -->
+                  <TextBlock Margin="0,2,0,0" FontSize="11" TextWrapping="Wrap"
+                             Foreground="{DynamicResource DangerTextBrush}"
+                             Text="{Binding EditError}"
+                             Visibility="{Binding HasEditError, Converter={StaticResource BoolToVis}}" />
+                </StackPanel>
+
+                <Button Grid.Column="2" x:Name="RowRenameButton" Content="✎"
+                        Style="{StaticResource RowIconButtonStyle}" Click="OnRowRenameClick"
+                        ToolTip="改这一张的包内文件名（扩展名不变）" />
+              </Grid>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+
+        <TextBlock Grid.Row="3" Margin="0,8,0,0" FontSize="11" TextWrapping="Wrap"
+                   Foreground="{DynamicResource TextTertiaryBrush}"
+                   Text="{Binding OrderHintText}" />
+      </Grid>
+
+      <!-- ================= 右：书籍信息（写进包内 ComicInfo.xml） ================= -->
+      <ScrollViewer Grid.Column="2" VerticalScrollBarVisibility="Auto" Padding="0,0,6,0">
+        <StackPanel>
+          <TextBlock FontSize="11" TextWrapping="Wrap" Foreground="{DynamicResource TextTertiaryBrush}"
+                     Text="下面这些内容会写进包内的 ComicInfo.xml；全空就不写这个文件。阅读器（静读天下 / Perfect Viewer / ComicRack）里显示的就是它。" />
+
+          <!-- ===== 基本信息 ===== -->
+          <TextBlock Text="基本信息" Style="{StaticResource SectionTitleStyle}" />
+          <Grid>
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="Auto" MinWidth="72" />
+              <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+              <RowDefinition Height="Auto" />
+              <RowDefinition Height="Auto" />
+              <RowDefinition Height="Auto" />
+              <RowDefinition Height="Auto" />
+              <RowDefinition Height="Auto" />
+              <RowDefinition Height="Auto" />
+              <RowDefinition Height="Auto" />
+              <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <TextBlock Grid.Row="0" Grid.Column="0" Text="标题" Style="{StaticResource FormLabelStyle}" />
+            <TextBox x:Name="TitleBox" Grid.Row="0" Grid.Column="1" Margin="0,0,0,10"
+                     Text="{Binding Title, UpdateSourceTrigger=PropertyChanged}" />
+
+            <TextBlock Grid.Row="1" Grid.Column="0" Text="系列" Style="{StaticResource FormLabelStyle}" />
+            <TextBox x:Name="SeriesBox" Grid.Row="1" Grid.Column="1" Margin="0,0,0,10"
+                     Text="{Binding Series, UpdateSourceTrigger=PropertyChanged}" />
+
+            <TextBlock Grid.Row="2" Grid.Column="0" Text="序号" Style="{StaticResource FormLabelStyle}"
+                       ToolTip="ComicInfo 的 Number：系列内序号，可以填 1，也可以填 1.5" />
+            <TextBox x:Name="NumberBox" Grid.Row="2" Grid.Column="1" Margin="0,0,0,10"
+                     Text="{Binding Number, UpdateSourceTrigger=PropertyChanged}"
+                     ToolTip="系列内序号（ComicInfo 的 Number）；可以是 1，也可以是 1.5" />
+
+            <TextBlock Grid.Row="3" Grid.Column="0" Text="计数" Style="{StaticResource FormLabelStyle}"
+                       ToolTip="ComicInfo 的 Count：这个系列一共几本" />
+            <TextBox x:Name="CountBox" Grid.Row="3" Grid.Column="1" Margin="0,0,0,10"
+                     Text="{Binding Count, UpdateSourceTrigger=PropertyChanged}"
+                     ToolTip="系列总本数（ComicInfo 的 Count）；留空 = 不写" />
+
+            <TextBlock Grid.Row="4" Grid.Column="0" Text="卷" Style="{StaticResource FormLabelStyle}" />
+            <TextBox x:Name="VolumeBox" Grid.Row="4" Grid.Column="1" Margin="0,0,0,10"
+                     Text="{Binding Volume, UpdateSourceTrigger=PropertyChanged}"
+                     ToolTip="卷号（ComicInfo 的 Volume）；留空 = 不写" />
+
+            <TextBlock Grid.Row="5" Grid.Column="0" Text="副系列" Style="{StaticResource FormLabelStyle}" />
+            <TextBox x:Name="AlternateSeriesBox" Grid.Row="5" Grid.Column="1" Margin="0,0,0,10"
+                     Text="{Binding AlternateSeries, UpdateSourceTrigger=PropertyChanged}"
+                     ToolTip="AlternateSeries：同一本书在别处的另一个系列名" />
+
+            <TextBlock Grid.Row="6" Grid.Column="0" Text="副序号" Style="{StaticResource FormLabelStyle}" />
+            <TextBox x:Name="AlternateNumberBox" Grid.Row="6" Grid.Column="1" Margin="0,0,0,10"
+                     Text="{Binding AlternateNumber, UpdateSourceTrigger=PropertyChanged}"
+                     ToolTip="AlternateNumber：在副系列里的序号" />
+
+            <TextBlock Grid.Row="7" Grid.Column="0" Text="副计数" Style="{StaticResource FormLabelStyle}" />
+            <TextBox x:Name="AlternateCountBox" Grid.Row="7" Grid.Column="1" Margin="0,0,0,10"
+                     Text="{Binding AlternateCount, UpdateSourceTrigger=PropertyChanged}"
+                     ToolTip="AlternateCount：副系列的总本数" />
+          </Grid>
+
+          <!-- ===== 创作者 ===== -->
+          <TextBlock Text="创作者" Style="{StaticResource SectionTitleStyle}" />
+          <Grid>
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="Auto" MinWidth="72" />
+              <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+              <RowDefinition Height="Auto" />
+              <RowDefinition Height="Auto" />
+              <RowDefinition Height="Auto" />
+              <RowDefinition Height="Auto" />
+              <RowDefinition Height="Auto" />
+              <RowDefinition Height="Auto" />
+              <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <TextBlock Grid.Row="0" Grid.Column="0" Text="编剧" Style="{StaticResource FormLabelStyle}" />
+            <TextBox x:Name="WriterBox" Grid.Row="0" Grid.Column="1" Margin="0,0,0,10"
+                     Text="{Binding Writer, UpdateSourceTrigger=PropertyChanged}"
+                     ToolTip="Writer：多个名字用「、」分隔（打包时按 ComicInfo 规范原样写）" />
+
+            <TextBlock Grid.Row="1" Grid.Column="0" Text="线稿" Style="{StaticResource FormLabelStyle}" />
+            <TextBox x:Name="PencillerBox" Grid.Row="1" Grid.Column="1" Margin="0,0,0,10"
+                     Text="{Binding Penciller, UpdateSourceTrigger=PropertyChanged}"
+                     ToolTip="Penciller：铅笔稿 / 主笔" />
+
+            <TextBlock Grid.Row="2" Grid.Column="0" Text="勾线" Style="{StaticResource FormLabelStyle}" />
+            <TextBox x:Name="InkerBox" Grid.Row="2" Grid.Column="1" Margin="0,0,0,10"
+                     Text="{Binding Inker, UpdateSourceTrigger=PropertyChanged}"
+                     ToolTip="Inker：勾线 / 墨线" />
+
+            <TextBlock Grid.Row="3" Grid.Column="0" Text="上色" Style="{StaticResource FormLabelStyle}" />
+            <TextBox x:Name="ColoristBox" Grid.Row="3" Grid.Column="1" Margin="0,0,0,10"
+                     Text="{Binding Colorist, UpdateSourceTrigger=PropertyChanged}"
+                     ToolTip="Colorist：上色" />
+
+            <TextBlock Grid.Row="4" Grid.Column="0" Text="嵌字" Style="{StaticResource FormLabelStyle}" />
+            <TextBox x:Name="LettererBox" Grid.Row="4" Grid.Column="1" Margin="0,0,0,10"
+                     Text="{Binding Letterer, UpdateSourceTrigger=PropertyChanged}"
+                     ToolTip="Letterer：台词嵌字" />
+
+            <TextBlock Grid.Row="5" Grid.Column="0" Text="封面" Style="{StaticResource FormLabelStyle}" />
+            <TextBox x:Name="CoverArtistBox" Grid.Row="5" Grid.Column="1" Margin="0,0,0,10"
+                     Text="{Binding CoverArtist, UpdateSourceTrigger=PropertyChanged}"
+                     ToolTip="CoverArtist：封面作者" />
+
+            <TextBlock Grid.Row="6" Grid.Column="0" Text="编辑" Style="{StaticResource FormLabelStyle}" />
+            <TextBox x:Name="EditorBox" Grid.Row="6" Grid.Column="1" Margin="0,0,0,10"
+                     Text="{Binding Editor, UpdateSourceTrigger=PropertyChanged}"
+                     ToolTip="Editor：责任编辑" />
+          </Grid>
+
+          <!-- ===== 出版 ===== -->
+          <TextBlock Text="出版" Style="{StaticResource SectionTitleStyle}" />
+          <Grid>
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="Auto" MinWidth="72" />
+              <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+              <RowDefinition Height="Auto" />
+              <RowDefinition Height="Auto" />
+              <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <TextBlock Grid.Row="0" Grid.Column="0" Text="出版社" Style="{StaticResource FormLabelStyle}" />
+            <TextBox x:Name="PublisherBox" Grid.Row="0" Grid.Column="1" Margin="0,0,0,10"
+                     Text="{Binding Publisher, UpdateSourceTrigger=PropertyChanged}" />
+
+            <TextBlock Grid.Row="1" Grid.Column="0" Text="出版品牌" Style="{StaticResource FormLabelStyle}" />
+            <TextBox x:Name="ImprintBox" Grid.Row="1" Grid.Column="1" Margin="0,0,0,10"
+                     Text="{Binding Imprint, UpdateSourceTrigger=PropertyChanged}"
+                     ToolTip="Imprint：出版社下面的品牌 / 书系" />
+
+            <TextBlock Grid.Row="2" Grid.Column="0" Text="出版日期" Style="{StaticResource FormLabelStyle}" />
+            <StackPanel Grid.Row="2" Grid.Column="1" Margin="0,0,0,10">
+              <StackPanel Orientation="Horizontal">
+                <TextBox x:Name="YearBox" Width="88"
+                         Text="{Binding YearText, UpdateSourceTrigger=PropertyChanged}"
+                         ToolTip="年（1000–2999，可留空）" />
+                <TextBlock Text="年" Margin="6,0,12,0" VerticalAlignment="Center"
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
+                <TextBox x:Name="MonthBox" Width="62"
+                         Text="{Binding MonthText, UpdateSourceTrigger=PropertyChanged}"
+                         ToolTip="月（1–12，可留空）" />
+                <TextBlock Text="月" Margin="6,0,12,0" VerticalAlignment="Center"
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
+                <TextBox x:Name="DayBox" Width="62"
+                         Text="{Binding DayText, UpdateSourceTrigger=PropertyChanged}"
+                         ToolTip="日（1–31，可留空）" />
+                <TextBlock Text="日" Margin="6,0,0,0" VerticalAlignment="Center"
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
+              </StackPanel>
+              <TextBlock Style="{StaticResource FieldHintStyle}" Text="三个都可以留空；只填年也行。" />
+              <TextBlock Style="{StaticResource FieldHintStyle}"
+                         Foreground="{DynamicResource DangerTextBrush}"
+                         Text="{Binding DateError}"
+                         Visibility="{Binding HasDateError, Converter={StaticResource BoolToVis}}" />
+            </StackPanel>
+          </Grid>
+
+          <!-- ===== 分类与内容 ===== -->
+          <TextBlock Text="分类与内容" Style="{StaticResource SectionTitleStyle}" />
+          <Grid>
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="Auto" MinWidth="72" />
+              <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+              <RowDefinition Height="Auto" />
+              <RowDefinition Height="Auto" />
+              <RowDefinition Height="Auto" />
+              <RowDefinition Height="Auto" />
+              <RowDefinition Height="Auto" />
+              <RowDefinition Height="Auto" />
+              <RowDefinition Height="Auto" />
+              <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <TextBlock Grid.Row="0" Grid.Column="0" Text="类型" Style="{StaticResource FormLabelStyle}" />
+            <TextBox x:Name="GenreBox" Grid.Row="0" Grid.Column="1" Margin="0,0,0,10"
+                     Text="{Binding Genre, UpdateSourceTrigger=PropertyChanged}"
+                     ToolTip="Genre：例如 少年 / 奇幻 / 悬疑" />
+
+            <TextBlock Grid.Row="1" Grid.Column="0" Text="标签" Style="{StaticResource FormLabelStyle}" />
+            <TextBox x:Name="TagsBox" Grid.Row="1" Grid.Column="1" Margin="0,0,0,10"
+                     Text="{Binding Tags, UpdateSourceTrigger=PropertyChanged}"
+                     ToolTip="Tags：多个标签用逗号分隔（ComicInfo 规范里就是逗号分隔的字符串）" />
+
+            <TextBlock Grid.Row="2" Grid.Column="0" Text="角色" Style="{StaticResource FormLabelStyle}" />
+            <TextBox x:Name="CharactersBox" Grid.Row="2" Grid.Column="1" Margin="0,0,0,10"
+                     Text="{Binding Characters, UpdateSourceTrigger=PropertyChanged}"
+                     ToolTip="Characters：出场角色" />
+
+            <TextBlock Grid.Row="3" Grid.Column="0" Text="团队" Style="{StaticResource FormLabelStyle}" />
+            <TextBox x:Name="TeamsBox" Grid.Row="3" Grid.Column="1" Margin="0,0,0,10"
+                     Text="{Binding Teams, UpdateSourceTrigger=PropertyChanged}"
+                     ToolTip="Teams：团体 / 组织" />
+
+            <TextBlock Grid.Row="4" Grid.Column="0" Text="地点" Style="{StaticResource FormLabelStyle}" />
+            <TextBox x:Name="LocationsBox" Grid.Row="4" Grid.Column="1" Margin="0,0,0,10"
+                     Text="{Binding Locations, UpdateSourceTrigger=PropertyChanged}"
+                     ToolTip="Locations：故事发生地点" />
+
+            <TextBlock Grid.Row="5" Grid.Column="0" Text="故事线" Style="{StaticResource FormLabelStyle}" />
+            <TextBox x:Name="StoryArcBox" Grid.Row="5" Grid.Column="1" Margin="0,0,0,10"
+                     Text="{Binding StoryArc, UpdateSourceTrigger=PropertyChanged}"
+                     ToolTip="StoryArc：所属故事线 / 篇章" />
+
+            <TextBlock Grid.Row="6" Grid.Column="0" Text="系列组" Style="{StaticResource FormLabelStyle}" />
+            <TextBox x:Name="SeriesGroupBox" Grid.Row="6" Grid.Column="1" Margin="0,0,0,10"
+                     Text="{Binding SeriesGroup, UpdateSourceTrigger=PropertyChanged}"
+                     ToolTip="SeriesGroup：把多个系列归到一起的组名" />
+
+            <TextBlock Grid.Row="7" Grid.Column="0" Text="分级" Style="{StaticResource FormLabelStyle}" />
+            <TextBox x:Name="AgeRatingBox" Grid.Row="7" Grid.Column="1" Margin="0,0,0,10"
+                     Text="{Binding AgeRating, UpdateSourceTrigger=PropertyChanged}"
+                     ToolTip="AgeRating：例如 全年龄 / 16+ / 18+" />
+          </Grid>
+
+          <!-- ===== 说明与来源 ===== -->
+          <TextBlock Text="说明与来源" Style="{StaticResource SectionTitleStyle}" />
+          <Grid>
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="Auto" MinWidth="72" />
+              <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+              <RowDefinition Height="Auto" />
+              <RowDefinition Height="Auto" />
+              <RowDefinition Height="Auto" />
+              <RowDefinition Height="Auto" />
+              <RowDefinition Height="Auto" />
+              <RowDefinition Height="Auto" />
+              <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <TextBlock Grid.Row="0" Grid.Column="0" Text="简介" Style="{StaticResource FormLabelStyle}" />
+            <TextBox x:Name="SummaryBox" Grid.Row="0" Grid.Column="1" Margin="0,0,0,10"
+                     Height="90" AcceptsReturn="True" TextWrapping="Wrap" AcceptsTab="False"
+                     VerticalScrollBarVisibility="Auto" VerticalContentAlignment="Top" Padding="8,6"
+                     Text="{Binding Summary, UpdateSourceTrigger=PropertyChanged}"
+                     ToolTip="Summary：阅读器详情页显示的内容提要" />
+
+            <TextBlock Grid.Row="1" Grid.Column="0" Text="备注" Style="{StaticResource FormLabelStyle}" />
+            <TextBox x:Name="NotesBox" Grid.Row="1" Grid.Column="1" Margin="0,0,0,10"
+                     Height="60" AcceptsReturn="True" TextWrapping="Wrap"
+                     VerticalScrollBarVisibility="Auto" VerticalContentAlignment="Top" Padding="8,6"
+                     Text="{Binding Notes, UpdateSourceTrigger=PropertyChanged}"
+                     ToolTip="Notes：给自己看的备注（阅读器一般也显示）" />
+
+            <TextBlock Grid.Row="2" Grid.Column="0" Text="网址" Style="{StaticResource FormLabelStyle}" />
+            <TextBox x:Name="WebBox" Grid.Row="2" Grid.Column="1" Margin="0,0,0,10"
+                     Text="{Binding Web, UpdateSourceTrigger=PropertyChanged}"
+                     ToolTip="Web：相关网址（ComicInfo 的 Web）" />
+
+            <TextBlock Grid.Row="3" Grid.Column="0" Text="语言" Style="{StaticResource FormLabelStyle}" />
+            <StackPanel Grid.Row="3" Grid.Column="1" Margin="0,0,0,10">
+              <TextBox x:Name="LanguageBox"
+                       Text="{Binding LanguageIso, UpdateSourceTrigger=PropertyChanged}"
+                       ToolTip="LanguageISO：语言代码，例如 zh-CN / ja / en" />
+              <TextBlock Style="{StaticResource FieldHintStyle}" Text="语言代码，例如 zh-CN、ja、en。" />
+            </StackPanel>
+
+            <TextBlock Grid.Row="4" Grid.Column="0" Text="格式" Style="{StaticResource FormLabelStyle}" />
+            <StackPanel Grid.Row="4" Grid.Column="1" Margin="0,0,0,10">
+              <TextBox x:Name="FormatBox"
+                       Text="{Binding Format, UpdateSourceTrigger=PropertyChanged}"
+                       ToolTip="ComicInfo 的 Format：原始出版形态，例如 连载 / 单行本 / 同人志" />
+              <TextBlock Style="{StaticResource FieldHintStyle}" Text="原始出版形态，例如 连载、单行本。" />
+            </StackPanel>
+
+            <TextBlock Grid.Row="5" Grid.Column="0" Text="扫描信息" Style="{StaticResource FormLabelStyle}" />
+            <TextBox x:Name="ScanInformationBox" Grid.Row="5" Grid.Column="1" Margin="0,0,0,10"
+                     Text="{Binding ScanInformation, UpdateSourceTrigger=PropertyChanged}"
+                     ToolTip="ScanInformation：扫描 / 制作信息（ComicInfo 的 ScanInformation）" />
+
+            <TextBlock Grid.Row="6" Grid.Column="0" Text="ISBN" Style="{StaticResource FormLabelStyle}" />
+            <TextBox x:Name="IsbnBox" Grid.Row="6" Grid.Column="1" Margin="0,0,0,10"
+                     Text="{Binding Isbn, UpdateSourceTrigger=PropertyChanged}"
+                     ToolTip="ISBN：规范里没有这个字段，填了才写；阅读器不认识会忽略，不影响别的项" />
+          </Grid>
+
+          <!-- ===== 其它 ===== -->
+          <TextBlock Text="其它" Style="{StaticResource SectionTitleStyle}" />
+          <Grid>
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="Auto" MinWidth="72" />
+              <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+              <RowDefinition Height="Auto" />
+              <RowDefinition Height="Auto" />
+              <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <TextBlock Grid.Row="0" Grid.Column="0" Text="黑白" Style="{StaticResource FormLabelStyle}" />
+            <StackPanel Grid.Row="0" Grid.Column="1" Margin="0,0,0,10">
+              <!-- 三态 ComboBox：不指定 / 否 / 是 → 绑成 bool?，选「不指定」就不写这一项 -->
+              <ComboBox x:Name="BlackAndWhiteBox" Width="200" HorizontalAlignment="Left"
+                        SelectedIndex="{Binding BlackAndWhiteIndex, Mode=TwoWay}"
+                        ToolTip="ComicInfo 的 BlackAndWhite；选「不指定」就不写这一项">
+                <ComboBoxItem Content="不指定" />
+                <ComboBoxItem Content="否（彩色）" />
+                <ComboBoxItem Content="是（黑白）" />
+              </ComboBox>
+            </StackPanel>
+
+            <TextBlock Grid.Row="1" Grid.Column="0" Text="阅读方向" Style="{StaticResource FormLabelStyle}" />
+            <StackPanel Grid.Row="1" Grid.Column="1" Margin="0,0,0,10">
+              <ComboBox x:Name="RightToLeftBox" Width="200" HorizontalAlignment="Left"
+                        SelectedIndex="{Binding RightToLeftIndex, Mode=TwoWay}"
+                        ToolTip="ComicInfo 的 RightToLeft；日漫一般选「是（从右往左）」">
+                <ComboBoxItem Content="不指定" />
+                <ComboBoxItem Content="否（从左往右）" />
+                <ComboBoxItem Content="是（从右往左）" />
+              </ComboBox>
+            </StackPanel>
+
+            <TextBlock Grid.Row="2" Grid.Column="0" Text="页数" Style="{StaticResource FormLabelStyle}" />
+            <TextBlock Grid.Row="2" Grid.Column="1" Margin="0,0,0,10" VerticalAlignment="Center"
+                       FontSize="12" Foreground="{DynamicResource TextTertiaryBrush}"
+                       Text="{Binding PageCountText}" />
+          </Grid>
+        </StackPanel>
+      </ScrollViewer>
+    </Grid>
+
+    <!-- 状态条：把「刚才发生了什么」说清楚（改名没生效之类也在这里） -->
+    <Border Grid.Row="2" Margin="0,14,0,0" Padding="10,7" CornerRadius="4"
+            Background="{DynamicResource LayerBackgroundBrush}"
+            BorderBrush="{DynamicResource BorderSubtleBrush}" BorderThickness="1">
+      <TextBlock FontSize="12" TextWrapping="Wrap" Text="{Binding StatusText}"
+                 Foreground="{DynamicResource TextSecondaryBrush}" />
+    </Border>
+
+    <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,14,0,0">
+      <Button x:Name="SaveButton" Content="保存" IsDefault="True"
+              Style="{StaticResource PrimaryButtonStyle}" Click="OnSaveClick"
+              ToolTip="保存后选 CBZ 输出位置并打包（带 ComicInfo.xml）；源图片一个字节都不会改" />
+      <Button x:Name="CancelButton" Margin="8,0,0,0" Content="取消" IsCancel="True"
+              Style="{StaticResource SecondaryButtonStyle}"
+              ToolTip="什么都不保存，回到主界面" />
+    </StackPanel>
+  </Grid>
+</Window>

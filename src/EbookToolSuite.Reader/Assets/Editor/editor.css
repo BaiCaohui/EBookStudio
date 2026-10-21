@@ -1,0 +1,49 @@
+/* 可视编辑器外壳样式。
+   颜色全部走 CSS 变量（--ets-*），由宿主（ChapterVisualEditorWindow）按书库主题算好，
+   通过 editor.html?themeJson=… 传进来后由 editor.js 写到 :root 上。
+   下面的默认值 = 亮色主题，单独打开 editor.html（没有主题参数）时用这一套。
+   规则：本文件不再写死任何主题色，新增颜色一律加变量。 */
+:root {
+  --ets-host: #f3f3f3;          /* 编辑区四周的底色（= 窗口底色） */
+  --ets-ribbon: #f3f3f3;        /* 工具条底色 */
+  --ets-panel: #ffffff;         /* 按钮 / 输入框 / 正文纸张（= 卡片色） */
+  --ets-text: #1a1a1a;          /* 主文字 */
+  --ets-muted: #8a8a8a;         /* 分组标题 / 单位 / 状态栏文字 */
+  --ets-border: #e5e5e5;        /* 分隔线与按钮/输入框边框 */
+  --ets-hover: #e6e6e6;         /* 按钮悬停底 */
+  --ets-accent: #0067c0;        /* 强调色（主按钮 / 悬停描边 / 图片选中轮廓） */
+  --ets-accent-text: #ffffff;   /* 强调色实底上的文字 */
+  --ets-selection: rgba(0, 103, 192, .12); /* 表格单元格选中底 */
+}
+
+html, body { height: 100%; margin: 0; }
+body { display: flex; flex-direction: column; font-family: "Microsoft YaHei UI", "Segoe UI", sans-serif; font-size: 13px; background: var(--ets-host); color: var(--ets-text); }
+
+#ribbon { display: flex; align-items: flex-start; gap: 0; padding: 6px 8px 6px; background: var(--ets-ribbon); border-bottom: 1px solid var(--ets-border); flex-wrap: wrap; }
+.group { display: flex; flex-direction: column; justify-content: flex-start; padding: 0 12px; border-right: 1px solid var(--ets-border); align-self: flex-start; }
+.group.last { border-right: 0; }
+/* 表格组独占一整行：上面加一条通栏横线（用户要求的分隔），并留出上下间距 */
+.group.wide { flex-basis: 100%; border-right: 0; border-top: 1px solid var(--ets-border); margin-top: 8px; padding-top: 8px; }
+.group .label { font-size: 11px; color: var(--ets-muted); margin-bottom: 3px; }
+.group .row { display: flex; gap: 3px; align-items: center; }
+.group .row + .row { margin-top: 8px; padding-top: 8px; }
+.spacer { flex: 1; }
+button { font: inherit; padding: 3px 7px; border: 1px solid var(--ets-border); background: var(--ets-panel); color: var(--ets-text); border-radius: 4px; cursor: pointer; min-width: 26px; }
+button:hover:not(:disabled) { background: var(--ets-hover); border-color: var(--ets-accent); }
+button:disabled { opacity: .45; cursor: default; }
+button.primary { background: var(--ets-accent); border-color: var(--ets-accent); color: var(--ets-accent-text); font-weight: 600; padding: 4px 12px; }
+select, input[type=number] { font: inherit; padding: 2px 4px; border: 1px solid var(--ets-border); border-radius: 4px; background: var(--ets-panel); color: var(--ets-text); }
+select option { background: var(--ets-panel); color: var(--ets-text); }
+input[type=number] { width: 54px; }
+.x, .tag { color: var(--ets-muted); font-size: 12px; }
+.tag { margin-left: 6px; }
+.vline { display: inline-block; width: 1px; height: 18px; background: var(--ets-border); margin: 0 6px; }
+
+#host { flex: 1; overflow: auto; padding: 18px 22px; background: var(--ets-host); }
+#surface { max-width: 900px; margin: 0 auto; background: var(--ets-panel); color: var(--ets-text); padding: 26px 34px; box-shadow: 0 1px 4px rgba(0,0,0,.12); outline: none; line-height: 1.7; }
+#surface img { max-width: 100%; height: auto; }
+#surface table { border-collapse: collapse; margin: 8px 0; table-layout: fixed; width: 100%; }
+#surface table td, #surface table th { border: 1px solid var(--ets-border); padding: 4px 8px; min-width: 28px; vertical-align: top; box-sizing: border-box; }
+#surface table td.ets-sel, #surface table th.ets-sel { background: var(--ets-selection); }
+#surface img.ets-sel { outline: 2px solid var(--ets-accent); }
+#status { padding: 5px 10px; border-top: 1px solid var(--ets-border); background: var(--ets-ribbon); color: var(--ets-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

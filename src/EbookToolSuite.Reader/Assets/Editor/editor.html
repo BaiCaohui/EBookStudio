@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>编辑章节</title>
+<link rel="stylesheet" href="editor.css" />
+</head>
+<body>
+<div id="ribbon">
+  <div class="group">
+    <div class="label">编辑</div>
+    <div class="row">
+      <button data-cmd="removeFormat" title="清除格式">清格式</button>
+      <button id="undo" title="撤销 Ctrl+Z">撤销</button>
+      <button id="redo" title="重做 Ctrl+Y">重做</button>
+    </div>
+  </div>
+
+  <div class="group">
+    <div class="label">字体</div>
+    <div class="row">
+      <button data-cmd="bold" title="加粗 Ctrl+B"><b>B</b></button>
+      <button data-cmd="italic" title="斜体 Ctrl+I"><i>I</i></button>
+      <button data-cmd="underline" title="下划线 Ctrl+U"><u>U</u></button>
+      <button data-cmd="strikeThrough" title="删除线"><s>S</s></button>
+      <select id="block" title="段落样式（跟随光标实时变化）">
+        <option value="p">正文</option>
+        <option value="h1">标题 1</option>
+        <option value="h2">标题 2</option>
+        <option value="h3">标题 3</option>
+        <option value="h4">标题 4</option>
+        <option value="blockquote">引用</option>
+      </select>
+      <select id="size" title="字号（相对字号 em/%：读者调阅读器字号时一起缩放）">
+        <option value="80%">80%</option>
+        <option value="90%">90%</option>
+        <option value="100%">100%</option>
+        <option value="110%">110%</option>
+        <option value="125%">125%</option>
+        <option value="150%">150%</option>
+        <option value="200%">200%</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="group">
+    <div class="label">段落</div>
+    <div class="row">
+      <button data-cmd="insertUnorderedList" title="无序列表">&#8226;&#8226;&#8226;</button>
+      <button data-cmd="insertOrderedList" title="有序列表">1.</button>
+      <button data-cmd="justifyLeft" title="左对齐">&#8676;</button>
+      <button data-cmd="justifyCenter" title="居中">&#8596;</button>
+      <button data-cmd="justifyRight" title="右对齐">&#8677;</button>
+      <button data-cmd="justifyFull" title="两端对齐">&#8801;</button>
+      <button data-cmd="outdent" title="减少缩进">&#8672;</button>
+      <button data-cmd="indent" title="增加缩进">&#8674;</button>
+    </div>
+  </div>
+
+  <div class="group">
+    <div class="label">图片</div>
+    <div class="row">
+      <button id="imgInsert" title="把一张图片插入到光标处">插入</button>
+      <button id="imgReplace" title="替换选中的图片" disabled>替换</button>
+      <button id="imgDelete" title="删除选中的图片" disabled>删除</button>
+    </div>
+  </div>
+
+  <div class="group wide">
+    <div class="label">表格</div>
+    <div class="row">
+      <input id="tbRows" type="number" min="1" max="50" value="3" title="行数" />
+      <span class="x">x</span>
+      <input id="tbCols" type="number" min="1" max="20" value="3" title="列数" />
+      <button id="tableInsert" title="插入表格">插入表格</button>
+      <span class="vline"></span>
+      <span id="tableOps" hidden style="display:inline-flex;gap:3px;align-items:center">
+      <button data-tbl="rowBefore" title="在当前行上方插入一行">行+上</button>
+      <button data-tbl="rowAfter" title="在当前行下方插入一行">行+下</button>
+      <button data-tbl="rowDelete" title="删除当前行">删行</button>
+      <button data-tbl="colBefore" title="在当前列左侧插入一列">列+左</button>
+      <button data-tbl="colAfter" title="在当前列右侧插入一列">列+右</button>
+      <button data-tbl="colDelete" title="删除当前列">删列</button>
+      <button data-tbl="mergeRight" title="与右侧单元格合并">合并右</button>
+      <button data-tbl="split" title="拆分当前单元格">拆分</button>
+      <button id="selectRow" title="选中光标所在的整行（再点行高应用）">选行</button>
+      <button id="selectCol" title="选中光标所在的整列（再点列宽应用）">选列</button>
+      <button data-tbl="tableDelete" title="删除整个表格">删表格</button>
+      </span>
+    </div>
+    <div class="row" id="tableSize" hidden>
+      <span class="tag">列宽</span><input id="colWidth" type="number" min="20" max="800" step="10" title="当前列宽度（像素）" />
+      <button id="colWidthApply">应用</button>
+      <span class="tag">行高</span><input id="rowHeight" type="number" min="16" max="400" step="4" title="当前行高度（像素）" />
+      <button id="rowHeightApply">应用</button>
+      <span class="tag">表宽</span><input id="tableWidth" type="number" min="40" max="2000" step="10" title="整个表格宽度（像素）" />
+      <button id="tableWidthApply">应用</button>
+      <button id="rowAdd" title="在表格末尾加一行">+行</button>
+      <button id="colAdd" title="在表格末尾加一列">+列</button>
+    </div>
+  </div>
+
+  <div class="spacer"></div>
+  <div class="group last">
+    <div class="row"><button id="btnSourceMode" title="切到源码视图（这一章）">源码视图</button></div>
+  </div>
+  <div class="group last">
+    <div class="row"><button id="save" class="primary" title="写回工作区（写进书里还要在主窗口点保存）">保存到工作区</button></div>
+  </div>
+</div>
+<div id="host"><div id="surface" contenteditable="true" spellcheck="false"></div></div>
+<div id="status">正在载入</div>
+<script src="editor.js"></script>
+</body>
+</html>

@@ -1,0 +1,27 @@
+<Window x:Class="EbookToolSuite.App.Views.T62BProbeWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
+        Title="EBookStudio - T6-2B 移动端通道探针"
+        Height="600" Width="800"
+        WindowStartupLocation="Manual"
+        ShowInTaskbar="False">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <TextBlock x:Name="StatusText" Grid.Row="0"
+                   Padding="10" TextWrapping="Wrap"
+                   FontFamily="Consolas" FontSize="12"
+                   Text="T6-2B 探针：正在初始化 WebView2..." />
+
+        <Grid Grid.Row="1">
+            <wv2:WebView2 x:Name="Web" />
+            <!-- 问题 2 的对照组：纯洁环境（不复用 READER 的 BrowserArguments / 安全设置），
+                 用来区分"WebView2 通道本身不通"与"我们的环境配置把它挡了"。 -->
+            <Grid x:Name="Plain" />
+        </Grid>
+    </Grid>
+</Window>

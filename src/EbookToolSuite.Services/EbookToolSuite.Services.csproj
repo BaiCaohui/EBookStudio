@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\EbookToolSuite.Core\EbookToolSuite.Core.csproj" />
+    <ProjectReference Include="..\EbookToolSuite.Engines\EbookToolSuite.Engines.csproj" />
+    <ProjectReference Include="..\EbookToolSuite.Infrastructure\EbookToolSuite.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- pdfium 的封装（T6-2：总页数 + 首页封面渲染）。它是普通类库，
+         所以本工程仍然是 net10.0 而不是 net10.0-windows——这条是选它
+         而不选 Windows.Data.Pdf 的全部理由（见 docs/DECISIONS.md 2026-10-13 条目）。
+         版本由 Directory.Packages.props 提供，此处不写 Version。 -->
+    <PackageReference Include="Docnet.Core" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- PdfServiceCollectionExtensions（Services/Pdf/）要用 IServiceCollection。
+         只引 Abstractions：Services 不该依赖具体容器实现。 -->
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- 转换模板用到的护眼样式。必须复制到输出目录：mobile-readable 模板把它
+         的绝对路径（AppContext.BaseDirectory 下）填进 extra-css 参数。 -->
+    <Content Include="Assets\Conversion\**\*" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>

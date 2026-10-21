@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>阅读器</title>
+<link rel="stylesheet" href="reader.css">
+</head>
+<body>
+  <div id="toolbar">
+    <!-- PDF：上一页放在最左（与 EPUB 的"上一章"同位）。非 PDF 模式由 reader.css 藏起来。 -->
+    <button id="pdfPrev" type="button" title="上一页（PageUp / &#8592;）">上一页</button>
+    <button id="btnPrev" type="button" title="上一页 / 上一章（&#8592; 或 PageUp）">上一章</button>
+    <button id="btnToc" type="button" title="目录（T）">目录</button>
+    <!-- T6-5：书签（Ctrl+B 直接加）与"书签与笔记"面板。PDF/漫画下由
+         ensurePdfToolbarRows() 搬到第一行（与目录同级），id 不变。 -->
+    <button id="btnBookmark" type="button" title="加书签（Ctrl+B）">书签</button>
+    <button id="btnAnnotations" type="button" title="书签与笔记">笔记</button>
+    <div id="heading">
+      <span id="chapterTitle"></span>
+      <!-- 用户 2026-10-21 要求：第二行写成「第 12/14 章　第 1/4 页」，
+           斜杠前面那个"当前第几"是可输入框 —— 输完按 Enter 或点别处就跳过去
+           （跳章落到该章第 1 页；跳页落到该页）。章号滚动/分页模式都显示，
+           页码只在分页模式显示（滚动模式没有"页"这个概念）。 -->
+      <span id="chapterMeta">
+        <span id="chapterMetaChapter" class="metaSeg">第 <input id="chapterJumpInput" class="metaJump" type="text" inputmode="numeric"
+            title="输入章节号后按 Enter 或点别处跳转（跳到该章第 1 页）" aria-label="跳到第几章" />/<span id="chapterTotal">0</span> 章</span>
+        <span id="chapterMetaPage" class="metaSeg" hidden>第 <input id="pageJumpInput" class="metaJump" type="text" inputmode="numeric"
+            title="输入页码后按 Enter 或点别处跳转" aria-label="跳到第几页" />/<span id="pageTotal">0</span> 页</span>
+      </span>
+    </div>
+    <select id="themeSelect" title="阅读主题（白 / 米黄 / 深灰 / 纯黑 / 护眼绿）">
+      <option value="light">白</option>
+      <option value="sepia">米黄</option>
+      <option value="dark">深灰</option>
+      <option value="night">纯黑</option>
+      <option value="green">护眼绿</option>
+<option value="custom">自定义</option>
+    </select>
+    <select id="encodingSelect" hidden title="文本编码（TXT 专用）"></select>
+    <span id="encodingHint" hidden></span>
+<div id="typePanel" hidden>
+      <label>字号 <span class="tyRow"><input type="range" id="tyFontSize" min="12" max="36" step="1" /><input type="number" id="tyFontSizeNum" min="12" max="36" step="1" /></span></label>
+      <label>行高 <span class="tyRow"><input type="range" id="tyLineHeight" min="1.2" max="2.5" step="0.1" /><input type="number" id="tyLineHeightNum" min="1.2" max="2.5" step="0.1" /></span></label>
+      <label>上边距 <span class="tyRow"><input type="range" id="tyMarginTop" min="0" max="20" step="1" /><input type="number" id="tyMarginTopNum" min="0" max="20" step="1" /></span></label>
+      <label>下边距 <span class="tyRow"><input type="range" id="tyMarginBottom" min="0" max="20" step="1" /><input type="number" id="tyMarginBottomNum" min="0" max="20" step="1" /></span></label>
+      <label>左边距 <span class="tyRow"><input type="range" id="tyMarginLeft" min="0" max="20" step="1" /><input type="number" id="tyMarginLeftNum" min="0" max="20" step="1" /></span></label>
+      <label>右边距 <span class="tyRow"><input type="range" id="tyMarginRight" min="0" max="20" step="1" /><input type="number" id="tyMarginRightNum" min="0" max="20" step="1" /></span></label>
+      <label>段距 <span class="tyRow"><input type="range" id="tyParaSpacing" min="0" max="2" step="0.1" /><input type="number" id="tyParaSpacingNum" min="0" max="2" step="0.1" /></span></label>
+      <label>首行缩进 <span class="tyRow"><input type="range" id="tyTextIndent" min="0" max="4" step="0.5" /><input type="number" id="tyTextIndentNum" min="0" max="4" step="0.5" /></span></label>
+      <label>分栏 <select id="tyColumns"><option value="1">单栏</option><option value="2">双栏</option><option value="3">三栏</option></select></label>
+      <label id="tyColumnGapRow" hidden>分栏间距 <span class="tyRow"><input type="range" id="tyColumnGap" min="0" max="256" step="2" /><input type="number" id="tyColumnGapNum" min="0" max="256" step="2" /></span></label>
+      <label id="tyColumnRuleRow" hidden>分栏竖线 <input type="checkbox" id="tyColumnRule" /></label>
+      <label>字体 <select id="tyFontFamily"></select></label>
+    </div>
+    <span id="customColors" hidden>
+      <input type="color" id="customBg" title="自定义：正文底色" />
+      <input type="color" id="customFg" title="自定义：正文字色" />
+      <input type="color" id="customLink" title="自定义：链接色" />
+    </span>
+<button id="btnType" title="字体与排版（Ctrl+= 放大 / Ctrl+- 缩小 / Ctrl+0 重置）">Aa</button>
+    <button id="btnMode" type="button" title="切换分页 / 滚动 (Ctrl+M)">分页</button>
+    <button id="btnEditChapter" title="编辑本章（可视编辑，边读边改）">编辑本章</button>
+    <button id="btnFindReplace" title="查找替换（当前章节 / 全书）">查找替换</button>
+      <button id="btnNext" type="button" title="下一页 / 下一章（&#8594; 或 PageDown）">下一章</button>
+
+    <!-- T6-2B：PDF 专用项目集。与 EPUB 共用同一条工具栏，靠 body 上的 .ets-pdf 类切换
+         （样式在 reader.css）。自绘引擎（pdfium 在宿主侧渲染成 JPEG 送进 #pdfPages）
+         接管了上一页/下一页、缩放、旋转、单页-连续、单页-双页、搜索与目录，
+         所以 T6-2 里被置灰的四个按钮现在全部可用（冒烟要断言它们不再是 disabled）。 -->
+    <span id="pdfBar">
+      <input id="pdfPageInput" type="number" min="1" step="1" value="1"
+             title="输入页码后按 Enter 跳页（精确）" />
+      <span id="pdfPageTotal">/ --</span>
+      <!-- 缩放：放大镜里带 − / +（用户要求：这两个不是页码加减，是缩放，用图标更好认）。 -->
+      <button id="pdfZoomOut" type="button" title="缩小（Ctrl+&minus;）" aria-label="缩小">
+        <svg class="pdfZoomIcon" viewBox="0 0 16 16" width="18" height="18" aria-hidden="true">
+          <circle cx="6" cy="6" r="5.2" fill="none" stroke="currentColor" stroke-width="1.1" />
+          <line x1="9.7" y1="9.7" x2="12.7" y2="12.7" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" />
+          <line x1="3" y1="6" x2="9" y2="6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
+        </svg>
+      </button>
+      <button id="pdfZoomIn" type="button" title="放大（Ctrl+=）" aria-label="放大">
+        <svg class="pdfZoomIcon" viewBox="0 0 16 16" width="18" height="18" aria-hidden="true">
+          <circle cx="6" cy="6" r="5.2" fill="none" stroke="currentColor" stroke-width="1.1" />
+          <line x1="9.7" y1="9.7" x2="12.7" y2="12.7" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" />
+          <line x1="3" y1="6" x2="9" y2="6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
+          <line x1="6" y1="3" x2="6" y2="9" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
+        </svg>
+      </button>
+      <button id="pdfFitPage" type="button" title="适应页面">适应页面</button>
+      <button id="pdfFitWidth" type="button" title="适应宽度">适应宽度</button>
+      <button id="pdfRotate" type="button" title="旋转（0&#176; / 90&#176; / 180&#176; / 270&#176;）">旋转</button>
+      <!-- 两个"模式"按钮独立成区：一个管「单页 ↔ 滚动」，一个管「单页 ↔ 双页」。
+           文案固定为「单页/滚动」「单页/双页」（这一枚管哪两个模式），**当前状态用颜色**表示：
+           白＝单页模式，绿＝滚动 / 双页（见 reader.css 的 .active 规则）。
+           按钮多起来之后靠固定文案更好认，也免得两枚按钮的文字随状态互相滚动。 -->
+      <span id="pdfModeGroup">
+        <button id="pdfLayout" type="button" title="单页模式（点击切到滚动模式，Ctrl+M）">单页/滚动</button>
+        <button id="pdfSpread" type="button" title="单页模式（点击切到双页模式，并排两页）">单页/双页</button>
+        <!-- T6-3：漫画专用的第三种模式（右到左）。PDF 模式下由 reader.css 藏起来。 -->
+        <button id="pdfRtl" type="button" title="日漫模式：从右到左">日漫模式</button>
+      </span>
+      <button id="pdfSearch" type="button" title="搜索（Ctrl+F）">搜索</button>
+      <!-- T7-4：预载页数不再是工具栏下拉，挪到主程序「设置 → 阅读」组（1–1000 页），
+           阅读器只读宿主下发的 pdf.preloadPages，工具栏不再占位。 -->
+      <button id="pdfFullscreen" type="button" title="全屏（F11 / 退出 Esc）">全屏</button>
+      <button id="pdfOpenExternal" type="button" title="用系统默认程序打开">外部打开</button>
+    </span>
+
+    <!-- PDF：下一页放在最右（与 EPUB 的"下一章"同位）。非 PDF 模式由 reader.css 藏起来。 -->
+    <button id="pdfNext" type="button" title="下一页（PageDown / &#8594; / 空格）">下一页</button>
+  </div>
+
+  <div id="viewport">
+    <iframe id="chapter" title="章节正文"></iframe>
+    <!-- T6-2B：自绘 PDF 页面容器。每页一个 .pdfPage（.pdfImage 是宿主渲染好的 JPEG，
+         .pdfText 是绝对定位的透明文字层），由 reader.js 排版、滚动、缩放、旋转、双页。
+         默认 hidden，进入 PDF 模式时由 reader.js 取消 hidden；EPUB/TXT 一律不用它。 -->
+    <div id="pdfPages" hidden></div>
+    <div id="tocPanel" hidden>
+      <div id="tocHead">
+        <span id="tocTitle">目录</span>
+        <span id="tocHint"></span>
+        <!-- 用户要求：关闭按钮左侧加「编辑目录」，跳到书籍信息与目录编辑页；
+             保存成功后宿主把新目录推回来（reader.toc），抽屉自动刷新。 -->
+        <button id="tocEdit" type="button" title="编辑目录与书籍信息">编辑目录</button>
+        <button id="tocClose" type="button" title="关闭目录">关闭</button>
+      </div>
+      <div id="tocList"></div>
+    </div>
+  </div>
+
+  <div id="gotoPanel" hidden>
+    <label>跳到全书 <span id="gotoValue">50</span>%
+      <input type="range" id="gotoRange" min="0" max="100" step="1" value="50" />
+    </label>
+    <button id="gotoGo" type="button" title="跳转（Enter）">跳转</button>
+    <button id="gotoClose" type="button" title="关闭（Esc）">关闭</button>
+  </div>
+
+  <div id="findBar" hidden>
+    <input id="findInput" type="text" placeholder="本章内查找" />
+    <span id="findCount"></span>
+    <button id="findPrev" type="button" title="上一个（Shift+Enter）">上一个</button>
+    <button id="findNext" type="button" title="下一个（Enter）">下一个</button>
+    <button id="findClose" type="button" title="关闭（Esc）">关闭</button>
+  </div>
+
+  <!-- T5-3 查找替换：范围可选当前章节 / 全书；"正则模式"是勾选项（勾上走 .NET 正则，默认不勾）。
+       全部替换前由宿主弹"替换预览"确认框，点取消一个字节都不改。 -->
+  <div id="frBar" hidden>
+    <span class="frPair" id="frFindPair">
+      <label class="frLabel" for="frFind">查找</label>
+      <input id="frFind" type="text" placeholder="查找" />
+    </span>
+    <span class="frPair" id="frReplacePair">
+      <label class="frLabel" for="frReplace">替换</label>
+      <input id="frReplace" type="text" placeholder="替换为" />
+    </span>
+    <span class="frGroup" id="frOptionsGroup">
+      <select id="frScope" title="范围">
+      <option value="chapter">当前章节</option>
+      <option value="book">全书</option>
+    </select>
+    <label class="frCheck"><input type="checkbox" id="frRegex" />正则模式</label>
+    <label class="frCheck"><input type="checkbox" id="frCase" />区分大小写</label>
+      <span id="frCount"></span>
+    </span>
+    <span class="frGroup" id="frButtonsGroup">
+      <button id="frPrev" type="button" title="上一个（Shift+Enter）">上一个</button>
+    <button id="frNext" type="button" title="下一个（Enter）">下一个</button>
+    <button id="frReplaceOne" type="button">替换</button>
+    <button id="frReplaceAll" type="button">全部替换</button>
+    <button id="frUndoReplace" type="button" title="把工作区还原到上一次全部替换之前">撤销上一次替换</button>
+      <button id="frClose" type="button" title="关闭（Esc）">关闭</button>
+    </span>
+  </div>
+
+  <div id="statusBar">
+    <button id="statusPrev" type="button" title="上一章（Ctrl+&#8592;）">上一章</button>
+    <span id="statusChapter">第 1 / 1 章</span>
+    <span id="statusPercent">全书 0%</span>
+    <span id="statusHint"></span>
+    <span id="statusSpacer"></span>
+    <button id="statusNext" type="button" title="下一章（Ctrl+&#8594;）">下一章</button>
+  </div>
+
+  <div id="notice" hidden></div>
+
+  <!-- T6-5：选中文字后的弹条。定点显示在选区上方；点空白处消失。
+       四种标记（高亮 / 下划线 / 波浪线 / 删除线）都只套显示样式、不改原文件；
+       再次选中同一段并点同一个按钮 = 取消该标记（换一种 = 替换）。
+       「复制」走系统剪贴板，「章内查找」把选区文字塞进查找栏。
+       右键是备用入口：WebView2 关掉了内核右键菜单，所以右键直接弹这一条。 -->
+  <div id="selBar" hidden>
+    <span id="selQuote"></span>
+    <button id="selHighlight" type="button" title="高亮（再点一次取消）">高亮</button>
+    <button id="selUnderline" type="button" title="下划线（再点一次取消）">下划线</button>
+    <button id="selWavy" type="button" title="波浪线（再点一次取消）">波浪线</button>
+    <button id="selStrike" type="button" title="删除线（再点一次取消）">删除线</button>
+    <button id="selNote" type="button">加笔记</button>
+    <button id="selCopy" type="button">复制</button>
+    <button id="selFind" type="button">章内查找</button>
+  </div>
+
+  <!-- 加笔记时的小编辑器（T6-5 初版）已被下面的完整笔记面板取代，保留注释说明避免误加回来。 -->
+
+  <!-- T6-5 补短三：笔记面板（参考用户截图）。
+       选中文字点「加笔记」打开它（新建）；点已有标记的文字打开同一个面板（改样式/颜色/备注）。
+       颜色 8 个点；样式 7 种：荧光 / 背景色 / 字体色 / 实线 / 波浪线 / 虚线 / 删除线。 -->
+  <div id="noteCard" hidden>
+    <div id="noteCardHead">
+      <span id="noteCardStyle">荧光</span>
+      <span id="noteCardTime"></span>
+      <button id="noteCardClose" type="button" title="关闭">×</button>
+    </div>
+    <div id="noteColorRow"></div>
+    <div id="noteStyleRow"></div>
+    <div id="noteCardQuote"></div>
+    <textarea id="noteCardText" rows="3" placeholder="输入备注……"></textarea>
+    <div id="noteCardActions">
+      <button id="noteCardDelete" type="button" title="删除这条笔记">删除笔记</button>
+      <button id="noteCardSave" type="button">保存</button>
+    </div>
+  </div>
+
+  <!-- 书签页 / 笔记页（同一个面板，按模式只显示一类）：
+         书签页顶部有「添加书签」；笔记页没有（笔记只能从正文选中文字来加）。
+         两页都保留「导出」。 -->
+  <div id="notesPanel" hidden>
+    <div id="notesHead">
+      <span id="notesTitle">书签</span>
+      <span id="notesHint"></span>
+      <button id="annotationsAdd" type="button" title="在当前位置加一个书签">添加书签</button>
+      <button id="notesExport" type="button" title="导出本书全部书签与笔记为 Markdown">导出</button>
+      <button id="notesClose" type="button" title="关闭">关闭</button>
+    </div>
+    <div id="notesBody"></div>
+  </div>
+
+  <script src="reader.js"></script>
+</body>
+</html>

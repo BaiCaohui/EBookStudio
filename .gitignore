@@ -1,0 +1,51 @@
+# ============ 构建产物 ============
+bin/
+obj/
+publish/
+*.user
+*.suo
+*.binlog
+.vs/
+.idea/
+
+# ============ 运行数据（绝不能进版本库） ============
+/Data/
+Data-Test/
+TestSamples/_generated/
+
+# ============ 测试样本（自备电子书，体积大且非本人作品） ============
+TestCorpus/
+
+# ============ 外部工具（体积大；来源/版本/哈希由 Tools/manifest.json 记录） ============
+Tools/Calibre Portable/
+Tools/Calibre/
+Tools/JRE/
+Tools/EpubCheck/
+Tools/pdfium/
+Tools/Tesseract/
+Tools/EBWebView/
+
+# ============ 本地临时 ============
+*.log
+*.bak
+~$*
+
+# 集成测试临时产物（真样本报告、100MB 实测数字等）
+build/_t44/
+build/_t45/
+build/_t46/
+build/_t47/
+.publish-data-*/
+
+# ============ GitHub 发布暂存（本地副本，勿进版本库） ============
+# build\github-repo  = 公开仓库的工作副本（源码 + dist\slim）
+# build\github-zips  = 已上传到 Release 的两个 zip
+build/github-repo/
+build/github-zips/
+build/gh-make-zips.ps1
+build/gh-release-notes.md
+build/gh-tree.json
+build/gh-remote-readme.md
+build/gh-sanitize.ps1
+build/gh-sanitize-scan.txt
+build/gh-download-check/

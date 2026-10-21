@@ -1,0 +1,17 @@
+<UserControl x:Class="EbookToolSuite.App.Controls.LoadingState"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Name="Root">
+  <!-- 统一的加载态（T7-3）：不转圈空白，给一条进度条 + 一句人话 -->
+  <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="360">
+    <ProgressBar Width="200" Height="6" IsIndeterminate="True" HorizontalAlignment="Center" />
+    <TextBlock Margin="0,14,0,0" HorizontalAlignment="Center" TextAlignment="Center"
+               FontSize="13" TextWrapping="Wrap"
+               Text="{Binding Text, ElementName=Root}"
+               Foreground="{DynamicResource TextSecondaryBrush}" />
+    <TextBlock Margin="0,6,0,0" HorizontalAlignment="Center" TextAlignment="Center"
+               FontSize="12" TextWrapping="Wrap"
+               Text="{Binding Detail, ElementName=Root}"
+               Foreground="{DynamicResource TextTertiaryBrush}" />
+  </StackPanel>
+</UserControl>

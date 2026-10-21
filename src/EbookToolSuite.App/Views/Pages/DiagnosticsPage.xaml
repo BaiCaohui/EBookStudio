@@ -1,0 +1,77 @@
+<UserControl x:Class="EbookToolSuite.App.Views.Pages.DiagnosticsPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+    <StackPanel Margin="24" MaxWidth="900" HorizontalAlignment="Left">
+
+      <Border Style="{StaticResource CardStyle}">
+        <StackPanel>
+          <TextBlock Style="{StaticResource CardTitleStyle}" Text="路径" />
+          <Grid x:Name="PathsGrid">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="88" />
+              <ColumnDefinition Width="*" MinWidth="240" />
+              <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+              <RowDefinition Height="Auto" />
+              <RowDefinition Height="Auto" />
+              <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+          </Grid>
+        </StackPanel>
+      </Border>
+
+      <Border Style="{StaticResource CardStyle}">
+        <StackPanel>
+          <DockPanel>
+            <Button x:Name="RecheckButton" DockPanel.Dock="Right" Content="重新检测"
+                    Style="{StaticResource SecondaryButtonStyle}" Click="OnRecheckClick" />
+            <TextBlock Style="{StaticResource CardTitleStyle}" Text="工具健康"
+                       VerticalAlignment="Center" Margin="0" />
+          </DockPanel>
+          <TextBlock x:Name="ToolsRootText" Style="{StaticResource MonoTextStyle}"
+                     Margin="0,12,0,12" TextWrapping="Wrap" />
+          <StackPanel x:Name="HealthRows" />
+        </StackPanel>
+      </Border>
+
+      <Border Style="{StaticResource CardStyle}">
+        <StackPanel>
+          <DockPanel>
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+              <Button Content="复制最近 200 行" Style="{StaticResource SecondaryButtonStyle}"
+                      Margin="0,0,8,0" Click="OnCopyLogClick" />
+              <Button Content="打开日志目录" Style="{StaticResource SecondaryButtonStyle}"
+                      Click="OnOpenLogDirClick" />
+            </StackPanel>
+            <TextBlock Style="{StaticResource CardTitleStyle}" Text="日志（内存缓冲）"
+                       VerticalAlignment="Center" Margin="0" />
+          </DockPanel>
+          <Border Background="{DynamicResource WindowBackgroundBrush}" CornerRadius="6"
+                  Padding="8" Margin="0,12,0,0">
+            <ScrollViewer MaxHeight="240" VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Auto">
+              <TextBlock x:Name="LogText" Style="{StaticResource MonoTextStyle}" />
+            </ScrollViewer>
+          </Border>
+        </StackPanel>
+      </Border>
+
+      <Border Style="{StaticResource CardStyle}">
+        <StackPanel>
+          <TextBlock Style="{StaticResource CardTitleStyle}" Text="诊断动作" />
+          <TextBlock Text="仅用于验证全局异常处理链路，正常情况下不使用。"
+                     FontSize="12" TextWrapping="Wrap"
+                     Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,12" />
+          <StackPanel Orientation="Horizontal">
+            <Button Content="触发 UI 线程异常" Style="{StaticResource SecondaryButtonStyle}"
+                    Margin="0,0,8,0" Click="OnThrowUiClick" />
+            <Button Content="触发未观察 Task 异常" Style="{StaticResource SecondaryButtonStyle}"
+                    Click="OnThrowTaskClick" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

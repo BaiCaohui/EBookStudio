@@ -1,0 +1,336 @@
+<Window x:Class="EbookToolSuite.App.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:nav="clr-namespace:EbookToolSuite.App.Navigation"
+        Title="EBookStudio"
+        Height="720" Width="1100" MinHeight="560" MinWidth="720"
+        WindowStartupLocation="CenterScreen"
+        UseLayoutRounding="True" SnapsToDevicePixels="True"
+        Background="{DynamicResource WindowBackgroundBrush}"
+        AllowDrop="True"
+        DragEnter="OnWindowDragOver"
+        DragOver="OnWindowDragOver"
+        DragLeave="OnWindowDragLeave"
+        Drop="OnWindowDrop"
+        Loaded="OnWindowLoaded" Closing="OnWindowClosing" PreviewKeyDown="OnWindowPreviewKeyDown">
+
+  <!-- 快捷键见设计文档 9.9.16。Ctrl+6 在诊断页不可见时会落到"未知路由"分支，
+       静默回落到书库并记 WRN。 -->
+  <Window.InputBindings>
+    <KeyBinding Modifiers="Control" Key="D1" Command="{Binding NavigateCommand}"
+                CommandParameter="{x:Static nav:Routes.Library}" />
+    <KeyBinding Modifiers="Control" Key="D2" Command="{Binding NavigateCommand}"
+                CommandParameter="{x:Static nav:Routes.Queue}" />
+    <KeyBinding Modifiers="Control" Key="D3" Command="{Binding NavigateCommand}"
+                CommandParameter="{x:Static nav:Routes.Activity}" />
+    <KeyBinding Modifiers="Control" Key="D4" Command="{Binding NavigateCommand}"
+                CommandParameter="{x:Static nav:Routes.Stats}" />
+    <KeyBinding Modifiers="Control" Key="D5" Command="{Binding NavigateCommand}"
+                CommandParameter="{x:Static nav:Routes.Settings}" />
+    <KeyBinding Modifiers="Control" Key="D6" Command="{Binding NavigateCommand}"
+                CommandParameter="{x:Static nav:Routes.Diagnostics}" />
+    <KeyBinding Modifiers="Alt" Key="Left" Command="{Binding GoBackCommand}" />
+    <KeyBinding Key="F5" Command="{Binding RefreshCommand}" />
+  </Window.InputBindings>
+
+  <Window.Resources>
+    <BooleanToVisibilityConverter x:Key="BoolToVis" />
+
+    <!--
+      导航项内容。用"单格 + 对齐"而不是多列 Grid：
+      折叠时图标要靠 HorizontalAlignment=Center 精确居中，
+      多列布局里 Auto 列在很窄的可用宽度下会把 20px 图标挤出去（实测被裁）。
+      位置换算：图标 14..34（中心 24）；标题从 46 开始；快捷键右对齐留 14。
+    -->
+    <DataTemplate x:Key="NavItemTemplate">
+      <Grid Height="40">
+        <TextBlock x:Name="Icon"
+                   HorizontalAlignment="Left" VerticalAlignment="Center"
+                   Margin="14,0,0,0"
+                   Style="{StaticResource NavIconStyle}"
+                   Text="{Binding IconGlyph}" />
+
+        <TextBlock x:Name="Label"
+                   HorizontalAlignment="Left" VerticalAlignment="Center"
+                   Margin="46,0,8,0"
+                   FontSize="14" TextTrimming="CharacterEllipsis"
+                   Text="{Binding Title}"
+                   Foreground="{DynamicResource TextSecondaryBrush}" />
+
+        <TextBlock x:Name="Shortcut"
+                   HorizontalAlignment="Right" VerticalAlignment="Center"
+                   Margin="0,0,14,0"
+                   FontSize="11"
+                   Text="{Binding ShortcutText}"
+                   Foreground="{DynamicResource TextTertiaryBrush}" />
+      </Grid>
+
+      <DataTemplate.Triggers>
+        <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListBoxItem}}"
+                     Value="True">
+          <Setter TargetName="Icon" Property="Foreground" Value="{DynamicResource AccentColorBrush}" />
+          <Setter TargetName="Label" Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+          <Setter TargetName="Label" Property="FontWeight" Value="SemiBold" />
+        </DataTrigger>
+
+        <!--
+          折叠态：隐藏文字，图标改居中。
+          条目左右各留 8 边距后内容很窄，图标 20 居中后落在 14..34，
+          换算到左栏坐标与展开态完全一致，也不会被裁。
+        -->
+        <DataTrigger Binding="{Binding DataContext.IsNavCollapsed, RelativeSource={RelativeSource AncestorType=Window}}"
+                     Value="True">
+          <Setter TargetName="Label" Property="Visibility" Value="Collapsed" />
+          <Setter TargetName="Shortcut" Property="Visibility" Value="Collapsed" />
+          <Setter TargetName="Icon" Property="Margin" Value="0" />
+          <Setter TargetName="Icon" Property="HorizontalAlignment" Value="Center" />
+        </DataTrigger>
+      </DataTemplate.Triggers>
+    </DataTemplate>
+
+    <Style x:Key="NavListStyle" TargetType="ListBox">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="ItemContainerStyle" Value="{StaticResource NavItemStyle}" />
+      <Setter Property="ItemTemplate" Value="{StaticResource NavItemTemplate}" />
+      <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled" />
+      <Setter Property="KeyboardNavigation.DirectionalNavigation" Value="Continue" />
+    </Style>
+  </Window.Resources>
+
+  <Grid>
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto" />   <!-- 0 菜单栏 -->
+      <RowDefinition Height="Auto" />   <!-- 1 工具健康横幅（仅异常时） -->
+      <RowDefinition Height="*" />      <!-- 2 主体：左栏 + 内容区 -->
+      <RowDefinition Height="24" />     <!-- 3 状态栏 -->
+    </Grid.RowDefinitions>
+
+    <!-- 第 0 行：菜单栏（阶段 0 的三组菜单保留：菜单是不依赖导航的兜底入口） -->
+    <Menu x:Name="MainMenu" Grid.Row="0">
+      <MenuItem Header="文件(_F)">
+        <MenuItem Header="导入文件...(_I)" Click="OnImportClick" />
+        <MenuItem Header="导入文件夹...(_D)" Click="OnImportFolderClick" />
+        <!-- 转换入口之一（另外两个在书库页：工具栏按钮与卡片右键菜单）。
+             作用对象是书库页里当前选中的书，所以未选中时置灰。 -->
+        <MenuItem x:Name="ConvertMenuItem" Header="转换格式...(_C)" IsEnabled="False"
+                  Click="OnConvertMenuClick" />
+        <Separator />
+        <!-- CBZ 打包是独立入口：它的输入是图片文件夹，不是库里的一本书，
+             所以进不了转换队列（队列围绕 books / book_formats 建）。 -->
+        <MenuItem Header="打包图片文件夹为 CBZ...(_B)" Click="OnPackCbzClick" />
+        <Separator />
+        <MenuItem Header="打开数据目录" Click="OnOpenDataDirClick" />
+        <Separator />
+        <MenuItem Header="退出(_X)" Click="OnExitClick" />
+      </MenuItem>
+      <MenuItem Header="工具(_T)">
+        <MenuItem Header="重新检测(_R)" Click="OnRecheckToolsClick" />
+        <MenuItem Header="打开工具目录" Click="OnOpenToolsDirClick" />
+      </MenuItem>
+      <MenuItem Header="帮助(_H)">
+        <MenuItem Header="打开日志目录(_L)" Click="OnOpenLogDirClick" />
+        <MenuItem Header="复制最近 200 行日志(_C)" Click="OnCopyLogClick" />
+        <Separator />
+        <MenuItem Header="诊断：触发 UI 线程异常" Click="OnThrowUiClick" />
+        <MenuItem Header="诊断：触发未观察 Task 异常" Click="OnThrowTaskClick" />
+      </MenuItem>
+    </Menu>
+
+    <!-- 第 1 行：工具健康横幅。只在有阻塞问题时出现（推挤布局，不覆盖内容）。 -->
+    <Border x:Name="HealthBar" Grid.Row="1" Height="36" Visibility="Collapsed"
+            Background="{DynamicResource DangerBackgroundBrush}">
+      <DockPanel LastChildFill="True" Margin="16,0,16,0">
+        <Button x:Name="HealthRecheckButton" DockPanel.Dock="Right" Content="重新检测"
+                Style="{StaticResource BannerButtonStyle}" Padding="10,0"
+                VerticalAlignment="Center" Click="OnRecheckToolsClick" />
+        <TextBlock x:Name="HealthIcon" DockPanel.Dock="Left" Margin="0,0,8,0"
+                   Style="{StaticResource InlineIconStyle}"
+                   Foreground="{DynamicResource DangerForegroundBrush}"
+                   VerticalAlignment="Center" />
+        <TextBlock x:Name="HealthText" FontSize="13" VerticalAlignment="Center"
+                   TextTrimming="CharacterEllipsis"
+                   Foreground="{DynamicResource DangerForegroundBrush}" />
+      </DockPanel>
+    </Border>
+
+    <!-- 第 2 行：主体 -->
+    <Grid Grid.Row="2">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="Auto" />
+        <ColumnDefinition Width="*" />
+      </Grid.ColumnDefinitions>
+
+      <!--
+        左栏。自上而下三块：折叠按钮 / 1px 细横线 / 导航列表。
+        折叠按钮放在侧边栏内部的最上方，图标中心与下面导航项的图标中心对齐（都是 x=24），
+        折叠态改居中后仍在同一条中心线上。
+        细横线把"折叠按钮"与"导航项"这两组可点区域分开，避免误点到下面那一项。
+
+        注意这里**不能**再用 DockPanel 做"底部按钮"：DockPanel 的 LastChildFill 默认为 true，
+        最后一个子元素会被当成填充元素、自己的 Dock 被忽略（实测按钮被垂直居中，折叠后还被压成 0 宽）。
+      -->
+      <Border x:Name="NavPane" Grid.Column="0" Width="240"
+              Background="{DynamicResource LayerBackgroundBrush}"
+              BorderBrush="{DynamicResource BorderSubtleBrush}"
+              BorderThickness="0,0,1,0"
+              ClipToBounds="True">
+        <Grid>
+          <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="1" />
+            <RowDefinition Height="*" />
+          </Grid.RowDefinitions>
+
+          <!-- Margin 只能在下面的 Button.Style 里给：本地值优先级高于 Style 与 Trigger 的 Setter，
+               写在元素上会让折叠态的 Margin=0 永远不生效。 -->
+          <Button x:Name="PaneToggleButton" Grid.Row="0"
+                  Width="28" Height="28" Padding="0"
+                  Click="OnTogglePaneClick"
+                  ToolTip="折叠 / 展开左栏">
+            <Button.Style>
+              <!-- 展开态：左对齐，按钮中心落在 x=24，与下面导航项图标同一条中心线 -->
+              <Style TargetType="Button" BasedOn="{StaticResource SecondaryButtonStyle}">
+                <Setter Property="HorizontalAlignment" Value="Left" />
+                <Setter Property="Margin" Value="10,6,0,6" />
+                <Style.Triggers>
+                  <!-- 折叠态：改居中（48 宽时中心还是 24，位置不跳） -->
+                  <DataTrigger Binding="{Binding DataContext.IsNavCollapsed,
+                               RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
+                    <Setter Property="HorizontalAlignment" Value="Center" />
+                    <Setter Property="Margin" Value="0,6,0,6" />
+                  </DataTrigger>
+                </Style.Triggers>
+              </Style>
+            </Button.Style>
+          </Button>
+
+          <!-- 细横线：把折叠按钮与导航项分开 -->
+          <Border x:Name="HeaderSeparator" Grid.Row="1"
+                  Background="{DynamicResource BorderSubtleBrush}" />
+
+          <ListBox x:Name="NavList" Grid.Row="2" Style="{StaticResource NavListStyle}"
+                   ItemsSource="{Binding Items}"
+                   SelectedItem="{Binding SelectedItem, Mode=TwoWay}" />
+        </Grid>
+      </Border>
+
+      <Grid Grid.Column="1">
+        <Grid.RowDefinitions>
+          <RowDefinition Height="48" />
+          <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- 顶栏：左当前页标题，右预留搜索位与设置入口 -->
+        <Grid Grid.Row="0" Margin="24,0,16,0">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
+          </Grid.ColumnDefinitions>
+
+          <TextBlock Grid.Column="0" Text="{Binding CurrentTitle}"
+                     FontSize="20" FontWeight="SemiBold" VerticalAlignment="Center"
+                     Foreground="{DynamicResource TextPrimaryBrush}" />
+
+          <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+            <!-- T2-3：搜索框。只在书库页出现；Ctrl+F 聚焦、Esc 清空并退出聚焦、Enter 立即搜。 -->
+            <Border x:Name="SearchBoxHost" Width="240" Height="30" CornerRadius="4" Margin="0,0,12,0"
+                    Background="{DynamicResource CardBackgroundBrush}"
+                    BorderBrush="{DynamicResource BorderSubtleBrush}" BorderThickness="1"
+                    Visibility="{Binding IsLibraryRoute, Converter={StaticResource BoolToVis}}">
+              <Grid>
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="Auto" />
+                  <ColumnDefinition Width="*" />
+                  <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="{StaticResource IconGlyphSearch}" FontFamily="{StaticResource IconFontFamily}"
+                           FontSize="12" Margin="8,0,6,0" VerticalAlignment="Center"
+                           Foreground="{DynamicResource TextTertiaryBrush}" />
+                <TextBox x:Name="SearchBox" Grid.Column="1" BorderThickness="0" Background="Transparent"
+                         VerticalContentAlignment="Center" FontSize="12"
+                         Foreground="{DynamicResource TextPrimaryBrush}"
+                         Text="{Binding Library.SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                         KeyDown="OnSearchBoxKeyDown" />
+                <Button x:Name="SearchClearButton" Grid.Column="2" Content="{StaticResource IconGlyphClear}"
+                        FontFamily="{StaticResource IconFontFamily}" FontSize="11"
+                        Width="24" Height="24" Padding="0" Margin="0,0,2,0"
+                        Style="{StaticResource SecondaryButtonStyle}"
+                        Click="OnSearchClearClick" ToolTip="清空搜索" />
+              </Grid>
+            </Border>
+
+            <!-- 命中数。和书库页工具栏那个是同一个口径（复用它的 CountText）。 -->
+            <TextBlock x:Name="LibraryCountText" FontSize="12" VerticalAlignment="Center"
+                       Margin="0,0,12,0" Text="{Binding Library.CountText}"
+                       Foreground="{DynamicResource TextTertiaryBrush}"
+                       Visibility="{Binding IsLibraryRoute, Converter={StaticResource BoolToVis}}" />
+            <Button x:Name="SettingsButton" Width="32" Height="32" Padding="0"
+                    Style="{StaticResource SecondaryButtonStyle}"
+                    Click="OnOpenSettingsClick" ToolTip="设置" />
+          </StackPanel>
+        </Grid>
+
+        <!-- 内容区 + 内联错误面板（同格互斥） -->
+        <Grid Grid.Row="1">
+          <ContentControl x:Name="PageHost" AutomationProperties.LiveSetting="Polite" Content="{Binding CurrentPage}" />
+
+          <Border x:Name="ErrorPanel" AutomationProperties.LiveSetting="Assertive" Style="{StaticResource CardStyle}"
+                  Margin="24" HorizontalAlignment="Center" VerticalAlignment="Center"
+                  Visibility="{Binding HasError, Converter={StaticResource BoolToVis}}">
+            <StackPanel MaxWidth="420">
+              <TextBlock Text="页面加载失败" FontSize="16" FontWeight="SemiBold"
+                         Foreground="{DynamicResource TextPrimaryBrush}" />
+              <TextBlock Margin="0,8,0,0" TextWrapping="Wrap" FontSize="13"
+                         Text="{Binding ErrorMessage}"
+                         Foreground="{DynamicResource TextSecondaryBrush}" />
+              <Button Content="重试" Margin="0,16,0,0" HorizontalAlignment="Left"
+                      Style="{StaticResource SecondaryButtonStyle}"
+                      Click="OnRetryPageClick" />
+            </StackPanel>
+          </Border>
+        </Grid>
+      </Grid>
+    </Grid>
+
+    <!-- 第 3 行：状态栏 -->
+    <Grid Grid.Row="3" Background="{DynamicResource LayerBackgroundBrush}">
+      <TextBlock x:Name="StatusText" Margin="16,0" FontSize="12" VerticalAlignment="Center"
+                 TextTrimming="CharacterEllipsis"
+                 Foreground="{DynamicResource TextSecondaryBrush}" />
+      <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,16,0">
+        <Ellipse x:Name="ToolHealthDot" Width="8" Height="8" VerticalAlignment="Center"
+                 Fill="{DynamicResource NeutralBrush}" />
+        <TextBlock x:Name="ToolHealthText" Margin="6,0,0,0" FontSize="12"
+                   VerticalAlignment="Center"
+                   Foreground="{DynamicResource TextSecondaryBrush}" />
+      </StackPanel>
+    </Grid>
+
+    <!-- ===== 拖动导入蒙版（T7-3 拖放增强） =====
+         把电子书拖到窗口任意位置时，整窗盖一层遮罩 + 中间提示「添加到书库」；
+         松手就导入。IsHitTestVisible=False：事件仍然交给窗口处理，蒙版只负责显示。 -->
+    <Grid x:Name="DropOverlay" Grid.RowSpan="4" Visibility="Collapsed"
+          IsHitTestVisible="False"
+          Background="{DynamicResource ScrimBrush}"
+          AutomationProperties.LiveSetting="Polite">
+      <Border MaxWidth="520" Padding="32,28" CornerRadius="10"
+              HorizontalAlignment="Center" VerticalAlignment="Center"
+              Background="{DynamicResource LayerBackgroundBrush}"
+              BorderBrush="{DynamicResource AccentColorBrush}"
+              BorderThickness="2">
+        <StackPanel>
+          <TextBlock Text="{StaticResource IconGlyphDocument}" FontFamily="{StaticResource IconFontFamily}"
+                     FontSize="40" HorizontalAlignment="Center"
+                     Foreground="{DynamicResource AccentColorBrush}" />
+          <TextBlock Text="添加到书库" FontSize="20" FontWeight="SemiBold" Margin="0,12,0,0"
+                     HorizontalAlignment="Center"
+                     Foreground="{DynamicResource TextPrimaryBrush}" />
+          <TextBlock Text="松开鼠标就开始导入。和「文件 - 导入」完全相同：支持的文件进导入队列，文件夹会递归扫描。"
+                     FontSize="12" Margin="0,8,0,0" TextAlignment="Center" TextWrapping="Wrap"
+                     Foreground="{DynamicResource TextSecondaryBrush}" />
+        </StackPanel>
+      </Border>
+    </Grid>
+  </Grid>
+</Window>

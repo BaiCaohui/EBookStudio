@@ -1,0 +1,50 @@
+﻿<Window x:Class="EbookToolSuite.App.Views.ImportQueueWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="导入" Height="480" Width="760"
+        WindowStartupLocation="CenterOwner"
+        ShowInTaskbar="False">
+  <Grid Margin="18">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="*" />
+      <RowDefinition Height="Auto" />
+    </Grid.RowDefinitions>
+
+    <TextBlock x:Name="HeadlineText" Text="正在扫描..." FontSize="14" FontWeight="SemiBold"
+               TextTrimming="CharacterEllipsis" />
+
+    <StackPanel Grid.Row="1" Margin="0,8,0,0">
+      <TextBlock x:Name="DetailText" Text="正在展开选择并预检重复..." Foreground="{DynamicResource TextSecondaryBrush}"
+                 TextTrimming="CharacterEllipsis" />
+      <ProgressBar x:Name="Bar" Height="6" Margin="0,10,0,0" Minimum="0" Maximum="1" Value="0" />
+      <TextBlock x:Name="SummaryText" Margin="0,6,0,0" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" />
+    </StackPanel>
+
+    <ListView x:Name="JobList" Grid.Row="2" Margin="0,14,0,0"
+              VirtualizingPanel.IsVirtualizing="True"
+              VirtualizingPanel.VirtualizationMode="Recycling"
+              ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+      <ListView.View>
+        <GridView>
+          <GridViewColumn Header="文件" Width="300"
+                          DisplayMemberBinding="{Binding FileName}" />
+          <GridViewColumn Header="状态" Width="130"
+                          DisplayMemberBinding="{Binding StateText}" />
+          <GridViewColumn Header="说明" Width="270"
+                          DisplayMemberBinding="{Binding MessageText}" />
+        </GridView>
+      </ListView.View>
+    </ListView>
+
+    <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,14,0,0">
+      <Button x:Name="PauseButton" Content="暂停(_P)" Width="96" Height="30"
+              IsEnabled="False" Click="OnPauseClick" />
+      <Button x:Name="CancelButton" Content="取消(_C)" Width="96" Height="30"
+              Margin="8,0,0,0" IsEnabled="False" Click="OnCancelClick" />
+      <Button x:Name="CloseButton" IsCancel="True" Content="关闭" Width="96" Height="30"
+              Margin="8,0,0,0" Click="OnCloseClick" />
+    </StackPanel>
+  </Grid>
+</Window>

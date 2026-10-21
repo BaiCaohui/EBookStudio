@@ -1,0 +1,47 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <!--
+    浅色主题（默认）。规格见设计文档 9.9.5。
+    这个文件与 Dark.xaml 的 key 必须完全一致，切换主题时整份替换。
+    强调色先写死 #0067C0（Win11 默认蓝）。TODO(T7-3)：改为跟随系统强调色。
+  -->
+
+  <SolidColorBrush x:Key="WindowBackgroundBrush"    Color="#FFF3F3F3" />
+  <SolidColorBrush x:Key="LayerBackgroundBrush"     Color="#FFFFFFFF" />
+  <SolidColorBrush x:Key="CardBackgroundBrush"      Color="#FFFFFFFF" />
+  <SolidColorBrush x:Key="BorderSubtleBrush"        Color="#FFE5E5E5" />
+
+  <SolidColorBrush x:Key="TextPrimaryBrush"         Color="#FF1A1A1A" />
+  <SolidColorBrush x:Key="TextSecondaryBrush"       Color="#FF5D5D5D" />
+  <SolidColorBrush x:Key="TextTertiaryBrush"        Color="#FF8A8A8A" />
+
+  <SolidColorBrush x:Key="AccentColorBrush"         Color="#FF0067C0" />
+  <SolidColorBrush x:Key="AccentSurfaceBrush"       Color="#1F0067C0" />
+  <SolidColorBrush x:Key="AccentSurfaceHoverBrush"  Color="#290067C0" />
+
+  <SolidColorBrush x:Key="SurfaceHoverBrush"        Color="#0F000000" />
+  <SolidColorBrush x:Key="SurfacePressedBrush"      Color="#17000000" />
+
+  <SolidColorBrush x:Key="DangerBackgroundBrush"    Color="#FFC62828" />
+  <SolidColorBrush x:Key="DangerForegroundBrush"    Color="#FFFFFFFF" />
+  <!-- 危险语义的**文字**色（底色上用 DangerForegroundBrush 的白字；直接写在浅底上时用这个红字）。
+       TXT 编辑器的查找计数用它（用户 2026-10-20 要求：红字）。 -->
+  <SolidColorBrush x:Key="DangerTextBrush"          Color="#FFC62828" />
+  <SolidColorBrush x:Key="SuccessBrush"             Color="#FF107C10" />
+  <SolidColorBrush x:Key="NeutralBrush"             Color="#FF8A8A8A" />
+  <!-- T2-6 文件状态角标：缺失 / 被外部修改。两套主题用同一组颜色（白字，语义色不该随主题变浅） -->
+  <SolidColorBrush x:Key="FileMissingBrush"        Color="#FF6E6E6E" />
+  <SolidColorBrush x:Key="FileModifiedBrush"       Color="#FFB45309" />
+
+  <!-- 状态栏与横幅的按钮：透明底 + 细边 + 跟随前景色 -->
+  <SolidColorBrush x:Key="OnDangerBorderBrush"      Color="#66FFFFFF" />
+  <SolidColorBrush x:Key="OnDangerHoverBrush"       Color="#26FFFFFF" />
+
+  <!-- T7-3 新增语义色：警告横幅 / 信息块。四套主题各一份，禁止再写死 #FFF4E5 这类浅色 -->
+  <SolidColorBrush x:Key="WarningBrush"             Color="#FF9A5B00" />
+  <SolidColorBrush x:Key="WarningSurfaceBrush"      Color="#FFFFF4E5" />
+  <SolidColorBrush x:Key="InfoBrush"                Color="#FF0067C0" />
+  <!-- 覆盖层遮罩：四套主题共用同一组半透明黑（叠在内容上，跟主题无关） -->
+  <SolidColorBrush x:Key="ScrimBrush"       Color="#66000000" />
+  <SolidColorBrush x:Key="ScrimStrongBrush" Color="#CC000000" />
+</ResourceDictionary>

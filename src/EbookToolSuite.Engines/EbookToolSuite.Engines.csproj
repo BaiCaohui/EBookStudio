@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- 只引日志抽象，不引 Serilog 本体：引擎层不该知道日志实现是谁 -->
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+    <!-- EPUB 只读解析。设计文档 2.2：明确不引任何 EPUB 写库（EpubSharp 等）。 -->
+    <PackageReference Include="VersOne.Epub" />
+    <!-- 封面与图片处理。文字叠加走 WPF 渲染，不走 ImageSharp.Drawing。 -->
+    <PackageReference Include="SixLabors.ImageSharp" />
+    <!-- T6-3：CBZ/CBR 解包。CBZ 本质是 zip，.NET 内置也能读，但 CBR 是 RAR，
+         内置不支持、必须用 SharpCompress（设计文档 §2.3、计划 T6-3）。
+         两者用同一条解包路径，免得 CBZ/CBR 各写一套排序与读页逻辑。 -->
+    <PackageReference Include="SharpCompress" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\EbookToolSuite.Core\EbookToolSuite.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- JobObject 是引擎内部实现细节，但要用真机测试验证 KILL_ON_JOB_CLOSE -->
+    <InternalsVisibleTo Include="EbookToolSuite.Engines.Tests" />
+  </ItemGroup>
+
+</Project>

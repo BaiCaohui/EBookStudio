@@ -1,0 +1,49 @@
+﻿<Window x:Class="EbookToolSuite.App.Views.ChapterSourceWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:avalonedit="http://icsharpcode.net/sharpdevelop/avalonedit"
+        Title="编辑章节源码" Width="1020" Height="760" MinWidth="620" MinHeight="420"
+        WindowStartupLocation="CenterOwner" FocusManager.FocusedElement="{Binding ElementName=SaveButton}">
+  <Grid Margin="16">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="*" />
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="Auto" />
+    </Grid.RowDefinitions>
+
+    <StackPanel Grid.Row="0" Orientation="Horizontal">
+      <TextBlock Text="章节" VerticalAlignment="Center" Margin="0,0,8,0" />
+      <ComboBox x:Name="ChapterBox" Width="360" DisplayMemberPath="Display"
+                SelectionChanged="OnChapterChanged" />
+      <Button x:Name="SaveButton" IsDefault="True" Content="保存到工作区" Margin="12,0,0,0"
+              Style="{StaticResource SecondaryButtonStyle}" Click="OnSaveClick"
+              ToolTip="先做 XML 语法检查，通过才写回工作区（写进书里还要在主窗口点【保存】）" />
+      <Button x:Name="ReloadButton" Content="重新载入" Margin="8,0,0,0"
+              Style="{StaticResource SecondaryButtonStyle}" Click="OnReloadClick"
+              ToolTip="丢掉当前编辑内容，重新从工作区读一遍" />
+    </StackPanel>
+
+    <avalonedit:TextEditor Grid.Row="1" x:Name="Editor" Margin="0,10,0,0"
+                           FontFamily="Consolas" FontSize="13" ShowLineNumbers="True"
+                           SyntaxHighlighting="XML" WordWrap="False"
+                           HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" />
+
+    <!-- 未保存提示做成内联面板（不用模态对话框：模态框会把自动化冒烟卡死） -->
+    <Border Grid.Row="2" x:Name="DirtyPanel" Visibility="Collapsed" Margin="0,10,0,0" Padding="10"
+            BorderThickness="1" CornerRadius="6" BorderBrush="{DynamicResource BorderSubtleBrush}">
+      <StackPanel Orientation="Horizontal">
+        <TextBlock x:Name="DirtyText" VerticalAlignment="Center" Text="有未保存的修改。" />
+        <Button x:Name="DirtySaveButton" Content="保存" Margin="12,0,0,0"
+                Style="{StaticResource SecondaryButtonStyle}" Click="OnDirtySaveClick" />
+        <Button x:Name="DirtyDropButton" Content="放弃修改" Margin="8,0,0,0"
+                Style="{StaticResource SecondaryButtonStyle}" Click="OnDirtyDropClick" />
+        <Button x:Name="DirtyCancelButton" IsCancel="True" Content="取消" Margin="8,0,0,0"
+                Style="{StaticResource SecondaryButtonStyle}" Click="OnDirtyCancelClick" />
+      </StackPanel>
+    </Border>
+
+    <TextBlock Grid.Row="3" x:Name="StatusText" Margin="0,8,0,0" FontSize="12" TextWrapping="Wrap"
+               Foreground="{DynamicResource TextTertiaryBrush}" />
+  </Grid>
+</Window>

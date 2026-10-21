@@ -1,0 +1,104 @@
+<Window x:Class="EbookToolSuite.App.Views.TxtEditorWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:avalonedit="http://icsharpcode.net/sharpdevelop/avalonedit"
+        Title="编辑 TXT 全文" Width="1100" Height="820" MinWidth="640" MinHeight="460"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="True">
+  <Grid Margin="16">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="*" />
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="Auto" />
+    </Grid.RowDefinitions>
+
+    <DockPanel Grid.Row="0" LastChildFill="False">
+      <Button x:Name="SaveButton" DockPanel.Dock="Left" IsDefault="True" Content="保存（Ctrl+S）"
+              Style="{StaticResource SecondaryButtonStyle}" Click="OnSaveClick"
+              ToolTip="把全文写回这个 TXT 文件（编码与 BOM 保持原样）" />
+      <TextBlock DockPanel.Dock="Left" Text="编码" Margin="16,0,6,0" VerticalAlignment="Center" />
+      <ComboBox x:Name="EncodingBox" DockPanel.Dock="Left" Width="126" VerticalAlignment="Center"
+                SelectionChanged="OnEncodingChanged"
+                ToolTip="这本书用的文本编码：改这里，阅读器和本窗口一起换；只影响这本书" />
+      <CheckBox x:Name="WrapCheck" DockPanel.Dock="Left" Content="自动换行" IsChecked="True"
+                Margin="12,0,0,0" VerticalAlignment="Center"
+                Checked="OnWrapChanged" Unchecked="OnWrapChanged" />
+
+      <!-- 缩放：[-] 百分比 [+]（用户 2026-10-20 要求）。
+           百分比本身是输入框：点进去全选、输数字回车生效；+/- 各按 10% 步进；
+           在正文里 Ctrl+滚轮也能缩放（和浏览器一样）。 -->
+      <TextBlock DockPanel.Dock="Left" Text="缩放" Margin="16,0,6,0" VerticalAlignment="Center" />
+      <Button x:Name="ZoomOutButton" DockPanel.Dock="Left" Content="−" Width="32" Padding="0"
+              VerticalAlignment="Center" Click="OnZoomOutClick" ToolTip="缩小 10%（Ctrl+鼠标滚轮向下也可以）" />
+      <TextBox x:Name="ZoomBox" DockPanel.Dock="Left" Width="86" Margin="4,0" Text="100%"
+               TextAlignment="Center" VerticalAlignment="Center" VerticalContentAlignment="Center"
+               Padding="6,3" FontSize="13" MinWidth="86"
+               ToolTip="放大比例：点这里直接输入数字（1–500），回车生效；Ctrl+鼠标滚轮也能缩放"
+               GotKeyboardFocus="OnZoomBoxFocus" LostKeyboardFocus="OnZoomBoxLostFocus"
+               KeyDown="OnZoomBoxKeyDown" />
+      <Button x:Name="ZoomInButton" DockPanel.Dock="Left" Content="+" Width="32" Padding="0"
+              VerticalAlignment="Center" Click="OnZoomInClick" ToolTip="放大 10%（Ctrl+鼠标滚轮向上也可以）" />
+
+      <Button x:Name="FindButton" DockPanel.Dock="Left" Content="查找" Margin="16,0,0,0"
+              Style="{StaticResource SecondaryButtonStyle}" Click="OnFindClick"
+              ToolTip="查找与替换（Ctrl+F），命中会高亮在正文里" />
+
+      <TextBlock x:Name="CountText" DockPanel.Dock="Right" VerticalAlignment="Center" FontSize="12"
+                 Foreground="{DynamicResource TextTertiaryBrush}" Text="共 0 字" />
+
+      <!-- 查找计数（用户 2026-10-20 要求）：红字写在工具栏右侧（「共 N 字」左边），
+           显示"第几处 / 共几处"；只在查找替换面板打开时出现，面板一关就收起。
+           放在工具栏而不在面板里，是为了照用户圈的位置；替换/全部替换/改正文/下一个都实时跟着变。 -->
+      <TextBlock x:Name="FindCountText" DockPanel.Dock="Right" Visibility="Collapsed"
+                 VerticalAlignment="Center" FontSize="12" Margin="0,0,16,0"
+                 Foreground="{DynamicResource DangerTextBrush}" Text="第 0 / 0 处"
+                 ToolTip="当前红色高亮是第几处命中 / 一共有几处（随替换实时变化）" />
+    </DockPanel>
+
+    <!-- 查找替换做成内联面板（不用模态框）：所有命中黄底，当前那一处红底。 -->
+    <Border Grid.Row="1" x:Name="FindPanel" Visibility="Collapsed" Margin="0,10,0,0" Padding="10"
+            BorderThickness="1" CornerRadius="6" BorderBrush="{DynamicResource BorderSubtleBrush}">
+      <WrapPanel Orientation="Horizontal">
+        <TextBlock Text="查找" VerticalAlignment="Center" Margin="0,0,6,0" />
+        <TextBox x:Name="FindBox" Width="200" Margin="0,2,10,0" TextChanged="OnFindTextChanged"
+                 ToolTip="要查找的文字（不区分大小写）；输入时命中与高亮实时刷新" />
+        <Button x:Name="FindPreviousButton" Content="上一个" Margin="0,0,6,0" Click="OnFindPreviousClick"
+                ToolTip="只移动红色高亮：上一个命中（从第一个再往前会绕到最后一个）" />
+        <Button x:Name="FindNextButton" Content="下一个" Margin="0,0,14,0" Click="OnFindNextClick"
+                ToolTip="只移动红色高亮：下一个命中（从最后一个再往后会绕回第一个）" />
+        <TextBlock Text="替换为" VerticalAlignment="Center" Margin="0,0,6,0" />
+        <TextBox x:Name="ReplaceBox" Width="200" Margin="0,2,10,0"
+                 ToolTip="要替换成的文字；替换只作用于当前红色高亮那一处" />
+        <Button x:Name="ReplaceButton" Content="替换" Margin="0,0,6,0" Click="OnReplaceClick"
+                ToolTip="只替换当前红色高亮的那一处" />
+        <Button x:Name="ReplaceAllButton" Content="全部替换" Margin="0,0,14,0" Click="OnReplaceAllClick"
+                ToolTip="替换全部命中" />
+        <Button x:Name="FindCloseButton" Content="关闭" Click="OnFindCloseClick"
+                ToolTip="关闭查找面板并清掉高亮（Esc）" />
+      </WrapPanel>
+    </Border>
+
+    <avalonedit:TextEditor Grid.Row="2" x:Name="Editor" Margin="0,10,0,0"
+                           FontFamily="Consolas, Microsoft YaHei UI" FontSize="14"
+                           ShowLineNumbers="False" WordWrap="True"
+                           HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" />
+
+    <!-- 未保存提示做成内联面板（不用模态对话框：模态框会把自动化冒烟卡死，本仓库踩过） -->
+    <Border Grid.Row="3" x:Name="DirtyPanel" Visibility="Collapsed" Margin="0,10,0,0" Padding="10"
+            BorderThickness="1" CornerRadius="6" BorderBrush="{DynamicResource BorderSubtleBrush}">
+      <StackPanel Orientation="Horizontal">
+        <TextBlock x:Name="DirtyText" VerticalAlignment="Center" Text="有未保存的修改。" />
+        <Button x:Name="DirtySaveButton" Content="保存" Margin="12,0,0,0"
+                Style="{StaticResource SecondaryButtonStyle}" Click="OnDirtySaveClick" />
+        <Button x:Name="DirtyDropButton" Content="放弃修改" Margin="8,0,0,0"
+                Style="{StaticResource SecondaryButtonStyle}" Click="OnDirtyDropClick" />
+        <Button x:Name="DirtyCancelButton" IsCancel="True" Content="取消" Margin="8,0,0,0"
+                Style="{StaticResource SecondaryButtonStyle}" Click="OnDirtyCancelClick" />
+      </StackPanel>
+    </Border>
+
+    <TextBlock Grid.Row="4" x:Name="StatusText" Margin="0,8,0,0" FontSize="12" TextWrapping="Wrap"
+               Foreground="{DynamicResource TextTertiaryBrush}" Text="正在载入全文…" />
+  </Grid>
+</Window>

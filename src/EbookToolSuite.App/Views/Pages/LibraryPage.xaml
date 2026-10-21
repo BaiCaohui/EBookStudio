@@ -1,0 +1,968 @@
+<UserControl x:Class="EbookToolSuite.App.Views.Pages.LibraryPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="clr-namespace:EbookToolSuite.App.Controls"
+             xmlns:conv="clr-namespace:EbookToolSuite.App.Converters"
+             xmlns:sys="clr-namespace:System;assembly=System.Runtime"
+             x:Name="Root">
+  <UserControl.Resources>
+    <BooleanToVisibilityConverter x:Key="BoolToVis" />
+    <conv:InverseBoolToVisibilityConverter x:Key="InverseBoolToVis" />
+    <conv:ReadingStatusToVisibilityConverter x:Key="StatusCheck" />
+
+    <!-- T7-4：封面尺寸三档（设置 → 书库）。默认档 small=120 / medium=150 / large=190，
+         由 LibraryPage.OnNavigatedToAsync 按 ui.coverSize 改写这两个资源。
+         默认值与 T1-3 完全一致（150 × 200），不设置时视觉不走样。 -->
+    <sys:Double x:Key="LibraryCardWidth">150</sys:Double>
+    <sys:Double x:Key="LibraryCoverHeight">200</sys:Double>
+
+    <!-- 书籍卡片。宽度跟设置里的封面尺寸走（DynamicResource），封面区 3:4。 -->
+    <Style x:Key="BookCardStyle" TargetType="Border">
+      <Setter Property="Width" Value="{DynamicResource LibraryCardWidth}" />
+      <Setter Property="Margin" Value="0,0,16,16" />
+      <Setter Property="Padding" Value="8" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource BorderSubtleBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Style.Triggers>
+        <Trigger Property="IsMouseOver" Value="True">
+          <Setter Property="Background" Value="{DynamicResource SurfaceHoverBrush}" />
+        </Trigger>
+        <!-- 选中：整块卡片换底色。
+             故意不用外框（那看起来像输入框），只用底纹深浅表达"当前作用于这一本"。
+             这条放在 hover 之后：选中态要压过悬停态，否则鼠标一移上去就"看起来没选中"。 -->
+        <DataTrigger Binding="{Binding IsSelected}" Value="True">
+          <Setter Property="Background" Value="{DynamicResource AccentSurfaceBrush}" />
+        </DataTrigger>
+        <!-- 批量勾选：和选中态用同一套视觉语言（整块换底色）。两者互斥，不会同时亮。 -->
+        <DataTrigger Binding="{Binding IsChecked}" Value="True">
+          <Setter Property="Background" Value="{DynamicResource AccentSurfaceBrush}" />
+        </DataTrigger>
+      </Style.Triggers>
+    </Style>
+
+    <!-- 列表视图的一行（T2-3 补丁八）。与卡片同一套选中/勾选视觉语言。 -->
+    <Style x:Key="BookRowStyle" TargetType="Border">
+      <Setter Property="Margin" Value="0,0,0,4" />
+      <Setter Property="Padding" Value="0,6" />
+      <Setter Property="CornerRadius" Value="6" />
+      <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource BorderSubtleBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Style.Triggers>
+        <Trigger Property="IsMouseOver" Value="True">
+          <Setter Property="Background" Value="{DynamicResource SurfaceHoverBrush}" />
+        </Trigger>
+        <DataTrigger Binding="{Binding IsSelected}" Value="True">
+          <Setter Property="Background" Value="{DynamicResource AccentSurfaceBrush}" />
+        </DataTrigger>
+        <DataTrigger Binding="{Binding IsChecked}" Value="True">
+          <Setter Property="Background" Value="{DynamicResource AccentSurfaceBrush}" />
+        </DataTrigger>
+      </Style.Triggers>
+    </Style>
+
+    <!-- 列表视图的表头按钮：平时像普通标签，悬停才有点击反馈。 -->
+    <Style x:Key="ListHeaderButtonStyle" TargetType="Button">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="HorizontalContentAlignment" Value="Left" />
+      <Setter Property="Cursor" Value="Hand" />
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Button">
+            <Border Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}">
+              <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                VerticalAlignment="Center" />
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Background" Value="{DynamicResource SurfaceHoverBrush}" />
+                <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <!-- 封面左下角的格式角标 -->
+    <Style x:Key="FormatBadgeStyle" TargetType="Border">
+      <Setter Property="Background" Value="{DynamicResource ScrimStrongBrush}" />
+      <Setter Property="CornerRadius" Value="3" />
+      <Setter Property="Padding" Value="5,1" />
+      <Setter Property="Margin" Value="4" />
+      <Setter Property="HorizontalAlignment" Value="Left" />
+      <Setter Property="VerticalAlignment" Value="Bottom" />
+    </Style>
+  <!-- 右键菜单做成**一份共享实例**（x:Key + 默认 x:Shared=True）。
+       每张卡片内联一个 ContextMenu，等于每张卡多建 11 个对象 + 4 个绑定求值；
+       1000 本书库快速滚动实测：平均帧耗时 36 ms -> 52 ms（一跳两屏）。
+       打开时由 OnCardContextMenuOpening 把 DataContext 设成被右键的那张卡片，
+       所以下面 MenuItem 的绑定与 Click 处理器写法一行都不用改。 -->
+  <ContextMenu x:Key="CardContextMenu">
+                  <MenuItem Header="查看详情"
+                            Click="OnContextDetailClick" />
+                  <MenuItem Header="转换格式"
+                            Click="OnContextConvertClick" />
+                  <!-- 阶段 3 编辑 UI 入口之一（另两处：工具栏与详情浮层）。
+                       EPUB 之外的格式没有 OPF 工作区，命令内部会拒绝并提示。 -->
+                  <MenuItem Header="编辑书籍"
+                            Click="OnContextEditClick" />
+                  <!-- 手动标阅读状态：自动判定只能识别"读到末尾"，弃读是主观决定。 -->
+                  <MenuItem Header="标记为">
+                    <MenuItem Header="未读" Tag="Unread" Click="OnMarkStatusClick">
+                      <MenuItem.Icon>
+                        <TextBlock Text="{StaticResource IconGlyphCheck}" FontFamily="{StaticResource IconFontFamily}" FontSize="13"
+                                   Foreground="{DynamicResource AccentColorBrush}"
+                                   Visibility="{Binding ReadingState, Converter={StaticResource StatusCheck}, ConverterParameter=Unread}" />
+                      </MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem Header="在读" Tag="Reading" Click="OnMarkStatusClick">
+                      <MenuItem.Icon>
+                        <TextBlock Text="{StaticResource IconGlyphCheck}" FontFamily="{StaticResource IconFontFamily}" FontSize="13"
+                                   Foreground="{DynamicResource AccentColorBrush}"
+                                   Visibility="{Binding ReadingState, Converter={StaticResource StatusCheck}, ConverterParameter=Reading}" />
+                      </MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem Header="已读完" Tag="Finished" Click="OnMarkStatusClick">
+                      <MenuItem.Icon>
+                        <TextBlock Text="{StaticResource IconGlyphCheck}" FontFamily="{StaticResource IconFontFamily}" FontSize="13"
+                                   Foreground="{DynamicResource AccentColorBrush}"
+                                   Visibility="{Binding ReadingState, Converter={StaticResource StatusCheck}, ConverterParameter=Finished}" />
+                      </MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem Header="弃读" Tag="Abandoned" Click="OnMarkStatusClick">
+                      <MenuItem.Icon>
+                        <TextBlock Text="{StaticResource IconGlyphCheck}" FontFamily="{StaticResource IconFontFamily}" FontSize="13"
+                                   Foreground="{DynamicResource AccentColorBrush}"
+                                   Visibility="{Binding ReadingState, Converter={StaticResource StatusCheck}, ConverterParameter=Abandoned}" />
+                      </MenuItem.Icon>
+                    </MenuItem>
+                  </MenuItem>
+                  <Separator />
+                  <MenuItem Header="删除"
+                            Click="OnContextDeleteClick" />
+  </ContextMenu>
+  </UserControl.Resources>
+  <Grid>
+    <!-- 网格层 -->
+    <Grid x:Name="GridLayer" Visibility="{Binding ShowGrid, Converter={StaticResource BoolToVis}}">
+      <Grid.RowDefinitions>
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="*" />
+      </Grid.RowDefinitions>
+
+      <Grid Grid.Row="0" Margin="0,0,0,12">
+        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+          <TextBlock x:Name="CountText" VerticalAlignment="Center" FontSize="12"
+                     Text="{Binding CountText}"
+                     Foreground="{DynamicResource TextSecondaryBrush}" />
+          <!-- T2-6：扫描结论。全正常时整块折起来，不占地方。 -->
+          <TextBlock x:Name="FileScanSummaryText" Margin="12,0,0,0" VerticalAlignment="Center"
+                     FontSize="12" Text="{Binding FileScanSummary}"
+                     Visibility="{Binding HasFileProblems, Converter={StaticResource BoolToVis}}"
+                     Foreground="{DynamicResource FileModifiedBrush}"
+                     ToolTip="被外部修改的文件，可以打开书籍详情点「接受改动」重新登记。" />
+          <!-- 工具栏导入入口：与「文件 - 导入文件 / 导入文件夹」菜单共用同一个 ImportCommand -->
+          <Button x:Name="ToolbarImportFileButton" Margin="12,0,0,0" Content="导入文件"
+                  Style="{StaticResource SecondaryButtonStyle}"
+                  Click="OnToolbarImportFileClick"
+                  ToolTip="选择一个或多个电子书文件导入书库（与「文件 - 导入文件」同一套流程）" />
+          <Button x:Name="ToolbarImportFolderButton" Margin="8,0,0,0" Content="导入文件夹"
+                  Style="{StaticResource SecondaryButtonStyle}"
+                  Click="OnToolbarImportFolderClick"
+                  ToolTip="选一个文件夹，递归扫描里面的电子书（与「文件 - 导入文件夹」同一套流程）" />
+
+        </StackPanel>
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+          <!-- 批量模式下的「已选 N 本」提示，只在批量模式出现 -->
+          <TextBlock x:Name="CheckedCountText" VerticalAlignment="Center" Margin="0,0,12,0"
+                     FontSize="12" Text="{Binding CheckedText}"
+                     Foreground="{DynamicResource TextSecondaryBrush}"
+                     Visibility="{Binding IsSelectionMode, Converter={StaticResource BoolToVis}}" />
+
+          <!-- 两种模式共用的开关，文案由 VM 给（批量选择 / 退出批量选择） -->
+          <Button x:Name="ToggleSelectionButton" Content="{Binding SelectionModeText}"
+                  Style="{StaticResource SecondaryButtonStyle}"
+                  Click="OnToggleSelectionModeClick"
+                  ToolTip="进入批量选择后，单击封面即可勾选多本，然后一次性删除" />
+
+          <!-- 以下三个只在批量模式出现 -->
+          <Button x:Name="SelectAllButton" Margin="8,0,0,0" Content="全选"
+                  Style="{StaticResource SecondaryButtonStyle}"
+                  Click="OnSelectAllClick"
+                  Visibility="{Binding IsSelectionMode, Converter={StaticResource BoolToVis}}" />
+          <Button x:Name="ClearCheckedButton" Margin="8,0,0,0" Content="清空"
+                  Style="{StaticResource SecondaryButtonStyle}"
+                  Click="OnClearCheckedClick"
+                  Visibility="{Binding IsSelectionMode, Converter={StaticResource BoolToVis}}" />
+
+          <Button x:Name="BatchConvertButton" Margin="8,0,0,0" Content="批量转换"
+                  Style="{StaticResource PrimaryButtonStyle}"
+                  Click="OnBatchConvertClick"
+                  ToolTip="把已勾选的书一次排进转换队列"
+                  Visibility="{Binding IsSelectionMode, Converter={StaticResource BoolToVis}}" />
+          <Button x:Name="DeleteSelectedButton" Margin="8,0,0,0"
+                  Content="{Binding DeleteSelectedText}"
+                  Style="{StaticResource DangerButtonStyle}"
+                  Click="OnDeleteSelectedClick"
+                  Visibility="{Binding IsSelectionMode, Converter={StaticResource BoolToVis}}" />
+
+          <!-- 转换入口之一：作用于网格里当前选中的书（单击卡片即可选中）。
+               另一个入口是卡片右键菜单，还有一个在书籍详情浮层里。
+               批量模式下没有「单选」这个概念，所以这一组按钮整体隐掉。 -->
+          <Button x:Name="ToolbarConvertButton" Margin="8,0,0,0" Content="转换" IsEnabled="False"
+                  Style="{StaticResource PrimaryButtonStyle}"
+                  Click="OnConvertClick"
+                  ToolTip="把选中的这本书转换成其它格式（先在网格里点一下卡片）"
+                  Visibility="{Binding IsSelectionMode, Converter={StaticResource InverseBoolToVis}}" />
+          <!-- 编辑入口之一：作用于网格里当前选中的书（与「转换」同一套三处入口的套路）。 -->
+          <Button x:Name="ToolbarEditButton" Margin="8,0,0,0" Content="编辑" IsEnabled="False"
+                  Style="{StaticResource SecondaryButtonStyle}"
+                  Click="OnEditClick"
+                  ToolTip="编辑这本书（EPUB：元数据与封面；CBZ：书籍信息与图片顺序；TXT：整本全文；先在网格里点一下卡片）"
+                  Visibility="{Binding IsSelectionMode, Converter={StaticResource InverseBoolToVis}}" />
+          <!-- T2-2：重复检测入口。批量模式下隐藏（它作用于整个书库，不是选中的书） -->
+          <Button x:Name="DuplicateScanButton" Margin="8,0,0,0" Content="重复检测"
+                  Style="{StaticResource SecondaryButtonStyle}"
+                  Click="OnDuplicateScanClick"
+                  ToolTip="按书名与作者找疑似重复的书，再算全文件哈希确证"
+                  Visibility="{Binding IsSelectionMode, Converter={StaticResource InverseBoolToVis}}" />
+          <!-- T2-3 补丁八：网格 / 列表视图切换。文案写的是「点了会切到哪个视图」。 -->
+          <Button x:Name="ViewToggleButton" Margin="8,0,0,0" Content="{Binding ViewToggleText}"
+                  Style="{StaticResource SecondaryButtonStyle}"
+                  Click="OnToggleViewClick"
+                  ToolTip="在网格视图与列表视图之间切换（也可以在设置页里改默认值）" />
+          <!-- T6-4：全库正文搜索。浮层在页面底部定义，按钮只负责打开它。 -->
+          <Button x:Name="FullTextSearchButton" Margin="8,0,0,0" Content="全文搜索"
+                  Style="{StaticResource SecondaryButtonStyle}"
+                  Click="OnFullTextSearchClick"
+                  ToolTip="在所有书的正文里搜关键词（结果可跳转到那一章并高亮）"
+                  Visibility="{Binding IsSelectionMode, Converter={StaticResource InverseBoolToVis}}" />
+          <Button x:Name="RefreshButton" Margin="8,0,0,0" Content="刷新"
+                  Style="{StaticResource SecondaryButtonStyle}"
+                  Click="OnRefreshClick" />
+        </StackPanel>
+      </Grid>
+
+      <!-- T2-3：筛选与排序。搜索框在主窗口顶栏，和这里是同一份查询状态。
+           整组控件包在一张"卡片"里，给它们一个明确的归属，而不是散在空白上。 -->
+      <Border Grid.Row="1" Margin="0,0,0,12" Style="{StaticResource FilterBarStyle}">
+        <Grid>
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
+          </Grid.ColumnDefinitions>
+
+          <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+            <TextBlock Text="格式" Style="{StaticResource FilterLabelStyle}" />
+            <ComboBox x:Name="FormatFilter" Style="{StaticResource FilterComboBoxStyle}"
+                      ItemsSource="{Binding FormatOptions}"
+                      SelectedItem="{Binding SelectedFormat, Mode=TwoWay}"
+                      DisplayMemberPath="Label" />
+
+            <TextBlock Text="状态" Style="{StaticResource FilterLabelStyle}" Margin="16,0,6,0" />
+            <ComboBox x:Name="StatusFilter" Style="{StaticResource FilterComboBoxStyle}"
+                      ItemsSource="{Binding StatusOptions}"
+                      SelectedItem="{Binding SelectedStatus, Mode=TwoWay}"
+                      DisplayMemberPath="Label" />
+
+            <TextBlock Text="排序" Style="{StaticResource FilterLabelStyle}" Margin="16,0,6,0" />
+            <ComboBox x:Name="SortFilter" Style="{StaticResource FilterComboBoxStyle}" MinWidth="128"
+                      ItemsSource="{Binding SortOptions}"
+                      SelectedItem="{Binding SelectedSort, Mode=TwoWay}"
+                      DisplayMemberPath="Label" />
+
+            <CheckBox x:Name="CoverFilter" Content="只看有封面" Margin="18,0,0,0"
+                      Style="{StaticResource FilterCheckBoxStyle}"
+                      IsChecked="{Binding OnlyWithCover, Mode=TwoWay}" />
+          </StackPanel>
+
+          <!-- 已选条件 chips：点某一枚就去掉那个条件 -->
+          <ItemsControl x:Name="ChipList" Grid.Column="1" Margin="20,0,12,0" VerticalAlignment="Center"
+                        HorizontalAlignment="Left"
+                        ItemsSource="{Binding Chips}"
+                        Visibility="{Binding HasChips, Converter={StaticResource BoolToVis}}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <StackPanel Orientation="Horizontal" />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate>
+                <Border Margin="6,0,0,0" Padding="9,3" CornerRadius="10"
+                        Background="{DynamicResource SurfaceHoverBrush}"
+                        BorderBrush="{DynamicResource BorderSubtleBrush}" BorderThickness="1">
+                  <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="{Binding Label}" FontSize="11" VerticalAlignment="Center"
+                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                    <!-- 去掉这枚 chip：一个纯图标小按钮，别用带底色的按钮（那会让 chip 看起来很重） -->
+                    <Button Content="{StaticResource IconGlyphClear}" FontFamily="{StaticResource IconFontFamily}"
+                            FontSize="11" Width="16" Height="16" Padding="0" Margin="6,0,0,0"
+                            Background="Transparent" BorderThickness="0"
+                            Foreground="{DynamicResource TextTertiaryBrush}"
+                            Command="{Binding Remove}" ToolTip="去掉这个条件" />
+                  </StackPanel>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+
+          <Button x:Name="ResetFiltersButton" Grid.Column="2" Content="重置筛选"
+                  VerticalAlignment="Center"
+                  Style="{StaticResource SecondaryButtonStyle}"
+                  IsEnabled="{Binding HasFieldFilters}"
+                  ToolTip="把格式 / 状态 / 只看有封面恢复成默认（不影响搜索关键词）"
+                  Click="OnResetFiltersClick" />
+        </Grid>
+      </Border>
+
+
+        <ListBox x:Name="BookList" Grid.Row="2" ItemsSource="{Binding Rows}"
+        ContextMenuOpening="OnCardContextMenuOpening"
+                 Visibility="{Binding IsListView, Converter={StaticResource InverseBoolToVis}}"
+                 Background="Transparent" BorderThickness="0" Padding="0,0,8,0"
+                 ScrollViewer.CanContentScroll="True"
+                 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                 ScrollViewer.VerticalScrollBarVisibility="Auto"
+                 VirtualizingPanel.IsVirtualizing="True"
+                 VirtualizingPanel.VirtualizationMode="Recycling"
+                 VirtualizingPanel.ScrollUnit="Pixel"
+                 VirtualizingPanel.CacheLength="1,1"
+                 VirtualizingPanel.CacheLengthUnit="Page"
+                 SelectionMode="Single" IsSynchronizedWithCurrentItem="False">
+          <ListBox.ItemContainerStyle>
+            <!-- 去掉 ListBox 自带的选中高亮：选中态由卡片自己表达 -->
+            <Style TargetType="ListBoxItem">
+              <Setter Property="Padding" Value="0" />
+              <Setter Property="Margin" Value="0" />
+              <Setter Property="Focusable" Value="False" />
+              <Setter Property="Template">
+                <Setter.Value>
+                  <ControlTemplate TargetType="ListBoxItem">
+                    <ContentPresenter />
+                  </ControlTemplate>
+                </Setter.Value>
+              </Setter>
+            </Style>
+          </ListBox.ItemContainerStyle>
+          <ListBox.ItemsPanel>
+            <ItemsPanelTemplate>
+              <VirtualizingStackPanel />
+            </ItemsPanelTemplate>
+          </ListBox.ItemsPanel>
+          <ListBox.ItemTemplate>
+            <DataTemplate>
+              <!-- 一行：横向摆几张卡片。虚拟化的单位是"行"，行内不再虚拟化 -->
+              <ItemsControl ItemsSource="{Binding Cards}">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <StackPanel Orientation="Horizontal" />
+                  </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+              <Border Style="{StaticResource BookCardStyle}" Loaded="OnCardLoaded">
+                <Border.InputBindings>
+                  <!-- 双击打开详情。这里用 MouseBinding + Command 而不是事件处理器：
+                       冒烟脚本才能断言这条绑定存在，并执行同一个命令。
+                       （TXT 也走这里：详情里再点「编辑书籍」才进全文编辑，与其它格式一致。） -->
+                  <MouseBinding MouseAction="LeftDoubleClick"
+                                Command="{Binding DataContext.OpenDetailCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                CommandParameter="{Binding}" />
+                  <MouseBinding MouseAction="LeftClick"
+                                Command="{Binding DataContext.SelectCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                CommandParameter="{Binding}" />
+                </Border.InputBindings>
+                <Grid>
+                  <StackPanel>
+                  <Grid Height="{DynamicResource LibraryCoverHeight}" x:Name="CoverGrid">
+                    <!-- 占位图：封面没加载出来（或本来就没有）时露出来的就是它 -->
+                    <Border CornerRadius="4" Background="{DynamicResource SurfaceHoverBrush}">
+                      <TextBlock Text="{StaticResource IconGlyphFolder}" FontFamily="{StaticResource IconFontFamily}"
+                                 FontSize="34" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                 Foreground="{DynamicResource TextTertiaryBrush}" />
+                    </Border>
+                    <Image Source="{Binding Cover}" Stretch="UniformToFill" />
+                    <!-- 格式角标：用户 2026-10-21 要求**这本书所有格式都显示**（3 种以上也一样）。
+                         长的时候在角标内换行（MaxWidth 跟着封面宽度走），绝不截断省略；
+                         MOBI/AZW3 以 EPUB 形态阅读时角标最前面还有一个 EPUB。 -->
+                    <Border Style="{StaticResource FormatBadgeStyle}"
+                            MaxWidth="{Binding ActualWidth, ElementName=CoverGrid}">
+                      <TextBlock Text="{Binding FormatBadge}" FontSize="11" Foreground="White"
+                                 TextWrapping="Wrap" />
+                    </Border>
+                    <!-- 宽松兜底读进来的书：右上角标一下，别让"能用"和"完好"看起来一样 -->
+                    <Border Style="{StaticResource FormatBadgeStyle}"
+                            Background="{DynamicResource DangerBackgroundBrush}"
+                            HorizontalAlignment="Right" VerticalAlignment="Top"
+                            Visibility="{Binding IsDamaged, Converter={StaticResource BoolToVis}}">
+                      <TextBlock Text="未校验" FontSize="11" Foreground="White" />
+                    </Border>
+                    <!-- 阅读状态角标（T2-3 用户要求）：未读 / 在读+进度 / 已读完 / 弃读（红）。
+                         卡片只有四个角：格式在左下、未校验在右上、勾选在右下，
+                         所以把"继续阅读 58%"并进这个角标，而不是再占一个角。 -->
+                    <Border x:Name="ReadingStateBadge" HorizontalAlignment="Left" VerticalAlignment="Top">
+                      <Border.Style>
+                        <Style TargetType="Border" BasedOn="{StaticResource FormatBadgeStyle}">
+                          <Style.Triggers>
+                            <DataTrigger Binding="{Binding ReadingState}" Value="Reading">
+                              <Setter Property="Background" Value="{DynamicResource AccentColorBrush}" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding ReadingState}" Value="Finished">
+                              <Setter Property="Background" Value="{DynamicResource SuccessBrush}" />
+                            </DataTrigger>
+                            <!-- 弃读标红：用户明确要求 -->
+                            <DataTrigger Binding="{Binding ReadingState}" Value="Abandoned">
+                              <Setter Property="Background" Value="{DynamicResource DangerBackgroundBrush}" />
+                            </DataTrigger>
+                          </Style.Triggers>
+                        </Style>
+                      </Border.Style>
+                      <TextBlock FontSize="11" Foreground="White" Text="{Binding ReadingStateText}"
+                                 ToolTip="{Binding ReadingStateFullText}" />
+                    </Border>
+                    <!-- 进度条：原来用 ProgressBar，它的默认模板有七八个元素，1000 本快速滚动时纯属开销。
+                         换成两个 Border + ScaleTransform：外观一样，元素数少一大截。
+                         ScaleX 直接绑 0~1 的比例，不需要知道卡片宽度（缩放是在布局之后做的）。 -->
+                    <Border Height="3" VerticalAlignment="Bottom" Background="{DynamicResource ScrimBrush}"
+                            Visibility="{Binding IsContinueReading, Converter={StaticResource BoolToVis}}">
+                      <Border Background="{DynamicResource AccentColorBrush}"
+                              RenderTransformOrigin="0,0">
+                        <Border.RenderTransform>
+                          <ScaleTransform ScaleX="{Binding ProgressPercent, Mode=OneWay}" />
+                        </Border.RenderTransform>
+                      </Border>
+                    </Border>
+                    <!-- 批量模式的勾选标记。放右下角，避开左上的「继续阅读」与右上的「未校验」 -->
+                    <Border Width="22" Height="22" CornerRadius="10" Margin="4"
+                            HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                            Background="{DynamicResource AccentColorBrush}"
+                            BorderBrush="White" BorderThickness="2"
+                            Visibility="{Binding IsChecked, Converter={StaticResource BoolToVis}}">
+                      <TextBlock Text="{StaticResource IconGlyphCheck}" FontFamily="{StaticResource IconFontFamily}"
+                                 FontSize="12" Foreground="White"
+                                 HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <!-- T2-6：文件状态。放正中间，四个角已经分别被格式 / 阅读状态 / 未校验 / 勾选占满了 -->
+                    <Border x:Name="FileStateBadge" Padding="8,4" CornerRadius="4"
+                            HorizontalAlignment="Center" VerticalAlignment="Center"
+                            Visibility="{Binding HasFileProblem, Converter={StaticResource BoolToVis}}"
+                            ToolTip="{Binding FileStateTip}">
+                      <Border.Style>
+                        <Style TargetType="Border">
+                          <Setter Property="Background" Value="{DynamicResource FileMissingBrush}" />
+                          <Style.Triggers>
+                            <DataTrigger Binding="{Binding FileState}" Value="ExternallyModified">
+                              <Setter Property="Background" Value="{DynamicResource FileModifiedBrush}" />
+                            </DataTrigger>
+                          </Style.Triggers>
+                        </Style>
+                      </Border.Style>
+                      <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="{StaticResource IconGlyphWarning}" FontFamily="{StaticResource IconFontFamily}"
+                                   FontSize="12" Foreground="White" VerticalAlignment="Center" />
+                        <TextBlock Margin="5,0,0,0" FontSize="11" Foreground="White"
+                                   Text="{Binding FileStateText}" VerticalAlignment="Center" />
+                      </StackPanel>
+                    </Border>
+                  </Grid>
+                  <TextBlock Margin="0,8,0,0" Text="{Binding Title}"
+                             FontSize="13" FontWeight="SemiBold" LineHeight="18"
+                             MaxHeight="38" TextWrapping="Wrap" TextTrimming="CharacterEllipsis"
+                             Foreground="{DynamicResource TextPrimaryBrush}" />
+                  <TextBlock Margin="0,2,0,0" Text="{Binding Authors}"
+                             FontSize="11" TextTrimming="CharacterEllipsis"
+                             Foreground="{DynamicResource TextSecondaryBrush}" />
+                  </StackPanel>
+                </Grid>
+              </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+        <!-- T2-3 补丁八：列表视图。绑的是扁平的 Books（网格绑的是按列折好的 Rows）。 -->
+        <Grid Grid.Row="2" Grid.IsSharedSizeScope="True"
+              Visibility="{Binding IsListView, Converter={StaticResource BoolToVis}}">
+          <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+          </Grid.RowDefinitions>
+
+          <!-- 表头右边留 25px = 竖直滚动条 17 + 列表右内边距 8，否则表头比行宽、列对不齐。 -->
+          <Border Grid.Row="0" Margin="0,0,25,4" Padding="0,4" Background="Transparent">
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="56" />
+                <ColumnDefinition Width="*" MinWidth="160" />
+                <ColumnDefinition Width="150" />
+                <ColumnDefinition Width="80" />
+                <ColumnDefinition Width="80" />
+                <ColumnDefinition Width="72" />
+                <ColumnDefinition Width="90" />
+                <ColumnDefinition Width="100" />
+              </Grid.ColumnDefinitions>
+              <TextBlock Grid.Column="0" />
+              <Button Grid.Column="1" x:Name="HeaderTitle" Content="书名" Tag="Title"
+                      Style="{StaticResource ListHeaderButtonStyle}" Click="OnSortHeaderClick" />
+              <Button Grid.Column="2" x:Name="HeaderAuthor" Content="作者" Tag="Author"
+                      Style="{StaticResource ListHeaderButtonStyle}" Click="OnSortHeaderClick" />
+              <TextBlock Grid.Column="3" Text="格式" FontSize="12" VerticalAlignment="Center"
+                         Foreground="{DynamicResource TextSecondaryBrush}" />
+              <Button Grid.Column="4" x:Name="HeaderSize" Content="大小" Tag="FileSize"
+                      Style="{StaticResource ListHeaderButtonStyle}" Click="OnSortHeaderClick" />
+              <TextBlock Grid.Column="5" Text="进度" FontSize="12" VerticalAlignment="Center"
+                         Foreground="{DynamicResource TextSecondaryBrush}" />
+              <TextBlock Grid.Column="6" Text="状态" FontSize="12" VerticalAlignment="Center"
+                         Foreground="{DynamicResource TextSecondaryBrush}" />
+              <Button Grid.Column="7" x:Name="HeaderAdded" Content="加入时间" Tag="AddedAt"
+                      Style="{StaticResource ListHeaderButtonStyle}" Click="OnSortHeaderClick" />
+            </Grid>
+          </Border>
+
+          <!-- 滚动条设为常显：表头留的 25px 是按「始终有滚动条」算的。 -->
+          <ListBox x:Name="BookRowList" Grid.Row="1" ItemsSource="{Binding Books}"
+          ContextMenuOpening="OnCardContextMenuOpening"
+                   Background="Transparent" BorderThickness="0" Padding="0,0,8,0"
+                   ScrollViewer.CanContentScroll="True"
+                   ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                   ScrollViewer.VerticalScrollBarVisibility="Visible"
+                   VirtualizingPanel.IsVirtualizing="True"
+                   VirtualizingPanel.VirtualizationMode="Recycling"
+                   VirtualizingPanel.ScrollUnit="Pixel"
+                   VirtualizingPanel.CacheLength="1,1"
+                   VirtualizingPanel.CacheLengthUnit="Page"
+                   SelectionMode="Single" IsSynchronizedWithCurrentItem="False">
+            <ListBox.ItemContainerStyle>
+              <Style TargetType="ListBoxItem">
+                <Setter Property="Padding" Value="0" />
+                <Setter Property="Margin" Value="0" />
+                <Setter Property="Focusable" Value="False" />
+                <Setter Property="Template">
+                  <Setter.Value>
+                    <ControlTemplate TargetType="ListBoxItem">
+                      <ContentPresenter />
+                    </ControlTemplate>
+                  </Setter.Value>
+                </Setter>
+              </Style>
+            </ListBox.ItemContainerStyle>
+            <ListBox.ItemTemplate>
+              <DataTemplate>
+                <Border Style="{StaticResource BookRowStyle}" Loaded="OnCardLoaded">
+                  <Border.InputBindings>
+                    <MouseBinding MouseAction="LeftDoubleClick"
+                                  Command="{Binding DataContext.OpenDetailCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                  CommandParameter="{Binding}" />
+                    <MouseBinding MouseAction="LeftClick"
+                                  Command="{Binding DataContext.SelectCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                  CommandParameter="{Binding}" />
+                  </Border.InputBindings>
+                  <Grid>
+                    <Grid.ColumnDefinitions>
+                      <ColumnDefinition Width="56" />
+                      <ColumnDefinition Width="*" MinWidth="160" />
+                      <ColumnDefinition Width="150" />
+                      <ColumnDefinition Width="80" />
+                      <ColumnDefinition Width="80" />
+                      <ColumnDefinition Width="72" />
+                      <ColumnDefinition Width="90" />
+                      <ColumnDefinition Width="100" />
+                    </Grid.ColumnDefinitions>
+                    <Grid Grid.Column="0" Width="40" Height="56" Margin="8,0,4,0">
+                      <Border CornerRadius="4" Background="{DynamicResource SurfaceHoverBrush}">
+                        <TextBlock Text="{StaticResource IconGlyphFolder}" FontFamily="{StaticResource IconFontFamily}" FontSize="16"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                                   Foreground="{DynamicResource TextTertiaryBrush}" />
+                      </Border>
+                      <Image Source="{Binding Cover}" Stretch="UniformToFill" />
+                      <Border Width="20" Height="20" CornerRadius="10"
+                              HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                              Margin="0,0,-4,-4" Background="{DynamicResource AccentColorBrush}"
+                              Visibility="{Binding IsChecked, Converter={StaticResource BoolToVis}}">
+                        <TextBlock Text="{StaticResource IconGlyphCheck}" FontFamily="{StaticResource IconFontFamily}" FontSize="12"
+                                   Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                      </Border>
+                    </Grid>
+                    <TextBlock Grid.Column="1" Text="{Binding Title}" Margin="8,0,12,0" FontSize="13"
+                               VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Grid.Column="2" Text="{Binding Authors}" FontSize="12"
+                               VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
+                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                    <TextBlock Grid.Column="3" Text="{Binding FormatBadge}" FontSize="11"
+                               VerticalAlignment="Center" TextWrapping="Wrap"
+                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                    <TextBlock Grid.Column="4" Text="{Binding SizeText}" FontSize="11"
+                               VerticalAlignment="Center"
+                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                    <TextBlock Grid.Column="5" Text="{Binding ProgressText}" FontSize="11"
+                               VerticalAlignment="Center"
+                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                    <StackPanel Grid.Column="6" VerticalAlignment="Center">
+                      <TextBlock Text="{Binding ReadingStateText}" FontSize="11"
+                                 ToolTip="{Binding ReadingStateFullText}"
+                                 Foreground="{DynamicResource TextSecondaryBrush}" />
+                      <!-- T2-6：文件状态接着阅读状态排，不另占一列（列宽只有 90） -->
+                      <TextBlock Margin="0,2,0,0" FontSize="11" Text="{Binding FileStateText}"
+                                 ToolTip="{Binding FileStateTip}"
+                                 Visibility="{Binding HasFileProblem, Converter={StaticResource BoolToVis}}">
+                        <TextBlock.Style>
+                          <Style TargetType="TextBlock">
+                            <Setter Property="Foreground" Value="{DynamicResource FileMissingBrush}" />
+                            <Style.Triggers>
+                              <DataTrigger Binding="{Binding FileState}" Value="ExternallyModified">
+                                <Setter Property="Foreground" Value="{DynamicResource FileModifiedBrush}" />
+                              </DataTrigger>
+                            </Style.Triggers>
+                          </Style>
+                        </TextBlock.Style>
+                      </TextBlock>
+                    </StackPanel>
+                    <TextBlock Grid.Column="7" Text="{Binding AddedAtText}" FontSize="11"
+                               VerticalAlignment="Center"
+                               Foreground="{DynamicResource TextTertiaryBrush}" />
+                  </Grid>
+                </Border>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+        </Grid>
+    </Grid>
+
+    <!-- 空状态 -->
+    <c:EmptyState x:Name="State"
+                  Visibility="{Binding ShowEmptyState, Converter={StaticResource BoolToVis}}" />
+
+    <!-- 加载中 -->
+    <TextBlock x:Name="LoadingText" Text="正在读书库..." HorizontalAlignment="Center"
+               VerticalAlignment="Center" FontSize="14"
+               Visibility="{Binding IsLoading, Converter={StaticResource BoolToVis}}"
+               Foreground="{DynamicResource TextSecondaryBrush}" />
+
+    <!-- 读库失败 -->
+    <Border x:Name="ErrorPanel" AutomationProperties.LiveSetting="Assertive" MaxWidth="520" Padding="20" CornerRadius="8" Margin="24"
+            HorizontalAlignment="Center" VerticalAlignment="Center"
+            Background="{DynamicResource CardBackgroundBrush}"
+            BorderBrush="{DynamicResource BorderSubtleBrush}" BorderThickness="1"
+            Visibility="{Binding HasError, Converter={StaticResource BoolToVis}}">
+      <StackPanel>
+        <TextBlock Text="书库读不出来" FontSize="16" FontWeight="SemiBold"
+                   Foreground="{DynamicResource TextPrimaryBrush}" />
+        <TextBlock x:Name="ErrorText" Margin="0,8,0,0" TextWrapping="Wrap" FontSize="12"
+                   Text="{Binding ErrorMessage}"
+                   Foreground="{DynamicResource TextSecondaryBrush}" />
+        <Button x:Name="RetryButton" Margin="0,16,0,0" HorizontalAlignment="Left" Content="重试"
+                Style="{StaticResource SecondaryButtonStyle}" Click="OnRetryClick" />
+      </StackPanel>
+    </Border>
+
+    <!-- 书籍详情浮层。做成浮层而不是另一个页面：返回时网格的滚动位置天然保持 -->
+    <Grid x:Name="DetailOverlay" Background="{DynamicResource ScrimBrush}"
+          Visibility="{Binding IsDetailOpen, Converter={StaticResource BoolToVis}}">
+      <Border MaxWidth="760" MaxHeight="560" Margin="24" CornerRadius="8" Padding="20"
+              HorizontalAlignment="Center" VerticalAlignment="Center"
+              Background="{DynamicResource LayerBackgroundBrush}"
+              BorderBrush="{DynamicResource BorderSubtleBrush}" BorderThickness="1"
+              DataContext="{Binding DetailBook}">
+        <Grid>
+          <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+          </Grid.RowDefinitions>
+
+          <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+              </Grid.ColumnDefinitions>
+
+              <Grid Grid.Column="0" Width="180" Height="240" VerticalAlignment="Top">
+                <Border CornerRadius="4" Background="{DynamicResource SurfaceHoverBrush}">
+                  <TextBlock Text="{StaticResource IconGlyphFolder}" FontFamily="{StaticResource IconFontFamily}"
+                             FontSize="40" HorizontalAlignment="Center" VerticalAlignment="Center"
+                             Foreground="{DynamicResource TextTertiaryBrush}" />
+                </Border>
+                <Image Source="{Binding Cover}" Stretch="UniformToFill" />
+              </Grid>
+
+              <StackPanel Grid.Column="1" Margin="20,0,0,0">
+                <TextBlock x:Name="DetailTitle" Text="{Binding Title}" FontSize="20" FontWeight="SemiBold"
+                           TextWrapping="Wrap" Foreground="{DynamicResource TextPrimaryBrush}" />
+                <TextBlock x:Name="DetailAuthors" Margin="0,4,0,0" Text="{Binding Authors}" FontSize="13"
+                           TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}" />
+
+                <ItemsControl x:Name="DetailMetadata" Margin="0,16,0,0" ItemsSource="{Binding Metadata}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                      <Grid>
+                        <Grid.Style>
+                          <Style TargetType="Grid">
+                            <Setter Property="Margin" Value="0,2" />
+                            <Style.Triggers>
+                              <DataTrigger Binding="{Binding IsFormatRow}" Value="True">
+                                <Setter Property="Height" Value="22" />
+                              </DataTrigger>
+                            </Style.Triggers>
+                          </Style>
+                        </Grid.Style>
+                        <Grid.ColumnDefinitions>
+                          <ColumnDefinition Width="76" />
+                          <ColumnDefinition Width="*" />
+                          <ColumnDefinition Width="Auto" />
+                          <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="{Binding Label}" FontSize="12"
+                                   VerticalAlignment="Center"
+                                   Foreground="{DynamicResource TextTertiaryBrush}" />
+                        <!-- 用户 2026-10-21：值 + 「切换此格式」放在同一个横向容器里，
+                             按钮紧跟大小右边（不再贴面板右边缘）。 -->
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                          <TextBlock Text="{Binding Value}" FontSize="12" MaxWidth="360"
+                                     VerticalAlignment="Center"
+                                     Foreground="{DynamicResource TextPrimaryBrush}">
+                            <!-- 信息行照旧换行；格式行行高固定，单行显示、超长省略，绝不撑破行 -->
+                            <TextBlock.Style>
+                              <Style TargetType="TextBlock">
+                                <Setter Property="TextWrapping" Value="Wrap" />
+                                <Style.Triggers>
+                                  <DataTrigger Binding="{Binding IsFormatRow}" Value="True">
+                                    <Setter Property="TextWrapping" Value="NoWrap" />
+                                    <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+                                  </DataTrigger>
+                                </Style.Triggers>
+                              </Style>
+                            </TextBlock.Style>
+                          </TextBlock>
+                          <!-- 用户 2026-10-21：多格式共存的书，给"其它格式"一行一个「切换此格式」。
+                               点了之后点「阅读」打开的就是这个格式。读不了的格式（FB2 等）不给按钮，
+                               当前格式自己也不给（它本来就是阅读要打开的那个）。
+                               高度压到 20，落在固定行高 22 之内。 -->
+                          <Button x:Name="DetailSwitchFormatButton" Content="切换此格式"
+                                  Margin="10,0,0,0" Height="20" Padding="8,0" FontSize="11"
+                                  VerticalAlignment="Center"
+                                  Style="{StaticResource SecondaryButtonStyle}"
+                                  Click="OnSwitchFormatClick"
+                                  Visibility="{Binding IsSwitchable, Converter={StaticResource BoolToVis}}"
+                                  ToolTip="把当前阅读格式切换成这一行；切换后点「阅读」打开的就是它，阅读进度会换算过去。" />
+                        </StackPanel>
+                        <!-- 用户 2026-10-20：文件已删掉的格式，行尾给「移除该格式」。
+                             只删库里的格式记录（文件早就不在了），普通元数据行不显示这个按钮。 -->
+                        <Button x:Name="DetailRemoveFormatButton" Grid.Column="2"
+                                Content="移除该格式" Margin="8,0,0,0"
+                                Height="20" Padding="8,0" FontSize="11"
+                                VerticalAlignment="Center"
+                                Style="{StaticResource SecondaryButtonStyle}"
+                                Click="OnRemoveFormatClick"
+                                Visibility="{Binding IsDeletedFormat, Converter={StaticResource BoolToVis}}"
+                                ToolTip="只从书库删掉这个格式记录；文件已经不在了，不会删任何文件。阅读进度与状态不受影响。" />
+                      </Grid>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <!-- T2-6：文件状态。缺文件的没什么可接受，所以「接受改动」只在被外部修改时出现 -->
+                <Border x:Name="DetailFileStateBar" Margin="0,12,0,0" Padding="10,8" CornerRadius="4"
+                        Background="{DynamicResource SurfaceHoverBrush}"
+                        Visibility="{Binding HasFileProblem, Converter={StaticResource BoolToVis}}">
+                  <!-- 用三列 Grid，不用横向 StackPanel：横向 StackPanel 测量时给子元素无限宽度，
+                       说明文字按自然宽度铺开，会把右边的「接受改动」挤出面板（被裁掉）。
+                       文字列用 * 才能换行，按钮列用 Auto 才能拿到自己的宽度。 -->
+                  <Grid>
+                    <Grid.ColumnDefinitions>
+                      <ColumnDefinition Width="Auto" />
+                      <ColumnDefinition Width="*" />
+                      <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0" Text="{StaticResource IconGlyphWarning}" FontFamily="{StaticResource IconFontFamily}"
+                               FontSize="13" VerticalAlignment="Center"
+                               Foreground="{DynamicResource FileModifiedBrush}" />
+                    <TextBlock x:Name="DetailFileStateText" Grid.Column="1" Margin="8,0,12,0" FontSize="12"
+                               VerticalAlignment="Center" TextWrapping="Wrap"
+                               Text="{Binding FileStateDetail}"
+                               Foreground="{DynamicResource TextPrimaryBrush}" />
+                    <Button x:Name="DetailAcceptChangeButton" Grid.Column="2" Content="接受改动"
+                            VerticalAlignment="Center"
+                            Style="{StaticResource SecondaryButtonStyle}"
+                            Click="OnAcceptChangeClick"
+                            Visibility="{Binding CanAcceptModification, Converter={StaticResource BoolToVis}}"
+                            ToolTip="把库里记的体积、修改时间与指纹更新成磁盘上的现状（不重新解析元数据）" />
+                  </Grid>
+                </Border>
+                <!-- 用户 2026-10-20：把最后一个格式也移掉之后才出现这条提示；
+                     只要还剩一个格式，上面那条"文件缺失"的提示会自己消失，这里也不显示。 -->
+                <Border x:Name="DetailNoFormatsBar" Margin="0,12,0,0" Padding="10,8" CornerRadius="4"
+                        Background="{DynamicResource SurfaceHoverBrush}"
+                        Visibility="{Binding HasNoFormats, Converter={StaticResource BoolToVis}}">
+                  <Grid>
+                    <Grid.ColumnDefinitions>
+                      <ColumnDefinition Width="Auto" />
+                      <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0" Text="{StaticResource IconGlyphWarning}" FontFamily="{StaticResource IconFontFamily}"
+                               FontSize="13" VerticalAlignment="Center"
+                               Foreground="{DynamicResource FileModifiedBrush}" />
+                    <TextBlock x:Name="DetailNoFormatsText" Grid.Column="1" Margin="8,0,0,0" FontSize="12"
+                               VerticalAlignment="Center" TextWrapping="Wrap"
+                               Text="{Binding NoFormatsDetail}"
+                               Foreground="{DynamicResource TextPrimaryBrush}" />
+                  </Grid>
+                </Border>
+                <TextBlock x:Name="DetailDescription" Margin="0,16,0,0" Text="{Binding Book.Description}"
+                           FontSize="12" TextWrapping="Wrap" MaxHeight="120"
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
+              </StackPanel>
+            </Grid>
+          </ScrollViewer>
+
+          <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+            <!-- 用户 2026-10-21：阅读按钮左边的小字 = 当前阅读格式，随上面的「切换此格式」即时变化。
+                 MOBI/AZW3 还没打开过（没有转换产物）时，这里换成"当前格式不支持阅读，点击阅读后自动转换…"。 -->
+            <TextBlock x:Name="DetailReadingFormatText" Text="{Binding ReadingFormatText}"
+                       VerticalAlignment="Center" Margin="0,0,12,0" MaxWidth="260"
+                       FontSize="11" TextWrapping="Wrap"
+                       Foreground="{DynamicResource TextSecondaryBrush}" />
+            <Button x:Name="DetailReadButton" Content="阅读"
+                    Style="{StaticResource PrimaryButtonStyle}"
+                    Click="OnReadClick"
+                    ToolTip="{Binding ReadingFormatText}" />
+            <Button x:Name="DetailConvertButton" Content="转换" Margin="8,0,0,0"
+                    Style="{StaticResource SecondaryButtonStyle}"
+                    Click="OnConvertClick"
+                    ToolTip="把这本转换成其它格式（EPUB / PDF / TXT / MOBI）" />
+            <Button x:Name="DetailEditButton" Content="编辑" Margin="8,0,0,0"
+                    Style="{StaticResource SecondaryButtonStyle}"
+                    Click="OnEditClick"
+                    ToolTip="编辑这本书（EPUB：元数据与封面；CBZ：书籍信息与图片顺序；TXT：整本全文）" />
+            <Button x:Name="DetailDeleteButton" Content="删除" Margin="8,0,0,0"
+                    Style="{StaticResource DangerButtonStyle}"
+                    Click="OnDetailDeleteClick"
+                    ToolTip="把这本书从书库删掉（连同文件、封面与阅读缓存）" />
+            <Button x:Name="DetailCloseButton" Content="返回" Margin="8,0,0,0"
+                    Style="{StaticResource SecondaryButtonStyle}"
+                    Command="{Binding DataContext.CloseDetailCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" />
+          </StackPanel>
+        </Grid>
+      </Border>
+    </Grid>
+
+    <!-- T6-4：全库正文搜索浮层。结果按书分组、片段里命中词加粗高亮；点一行打开那一章并高亮。 -->
+    <Grid x:Name="FullTextOverlay" Background="{DynamicResource ScrimBrush}"
+          Visibility="{Binding FullText.IsOpen, Converter={StaticResource BoolToVis}}">
+      <Border MaxWidth="860" MaxHeight="640" Margin="24" CornerRadius="8" Padding="20"
+              HorizontalAlignment="Center" VerticalAlignment="Center"
+              Background="{DynamicResource LayerBackgroundBrush}"
+              BorderBrush="{DynamicResource BorderSubtleBrush}" BorderThickness="1"
+              DataContext="{Binding FullText}">
+        <Grid>
+          <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+          </Grid.RowDefinitions>
+
+          <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="*" />
+              <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0" Height="34" CornerRadius="4"
+                    Background="{DynamicResource CardBackgroundBrush}"
+                    BorderBrush="{DynamicResource BorderSubtleBrush}" BorderThickness="1">
+              <Grid>
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="Auto" />
+                  <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="{StaticResource IconGlyphSearch}" FontFamily="{StaticResource IconFontFamily}"
+                           FontSize="13" Margin="10,0,8,0" VerticalAlignment="Center"
+                           Foreground="{DynamicResource TextTertiaryBrush}" />
+                <TextBox x:Name="FullTextSearchBox" Grid.Column="1" BorderThickness="0"
+                         Background="Transparent" FontSize="13"
+                         VerticalContentAlignment="Center"
+                         Text="{Binding Query, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                         KeyDown="OnFullTextSearchKeyDown" />
+              </Grid>
+            </Border>
+
+            <Button Grid.Column="1" Margin="8,0,0,0" Content="关闭"
+                    Style="{StaticResource SecondaryButtonStyle}"
+                    Command="{Binding CloseCommand}" />
+          </Grid>
+
+          <!-- 范围与短词提示 -->
+          <StackPanel Grid.Row="1" Margin="0,10,0,0" Orientation="Horizontal">
+            <TextBlock Text="{Binding ScopeText}" FontSize="12" VerticalAlignment="Center"
+                       Foreground="{DynamicResource TextSecondaryBrush}" />
+            <Button Content="搜全部" Margin="10,0,0,0" FontSize="11"
+                    Style="{StaticResource SecondaryButtonStyle}"
+                    Command="{Binding ClearScopeCommand}"
+                    Visibility="{Binding HasScope, Converter={StaticResource BoolToVis}}" />
+            <TextBlock Margin="14,0,0,0" Text="{Binding NoticeText}" FontSize="11"
+                       VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="420"
+                       Foreground="{DynamicResource TextTertiaryBrush}" />
+          </StackPanel>
+
+          <ScrollViewer Grid.Row="2" Margin="0,10,0,0" VerticalScrollBarVisibility="Auto">
+            <ItemsControl ItemsSource="{Binding Groups}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <StackPanel Margin="0,0,0,14">
+                    <StackPanel Orientation="Horizontal">
+                      <TextBlock Text="{Binding Title}" FontSize="14" FontWeight="SemiBold"
+                                 Foreground="{DynamicResource TextPrimaryBrush}"
+                                 TextTrimming="CharacterEllipsis" MaxWidth="360" />
+                      <TextBlock Text="{Binding Authors}" Margin="8,0,0,0" FontSize="11"
+                                 VerticalAlignment="Bottom"
+                                 Foreground="{DynamicResource TextTertiaryBrush}" />
+                      <TextBlock Text="{Binding CountText}" Margin="8,0,0,0" FontSize="11"
+                                 VerticalAlignment="Bottom"
+                                 Foreground="{DynamicResource TextTertiaryBrush}" />
+                      <Button Content="只搜这本" Margin="10,0,0,0" FontSize="11"
+                              Style="{StaticResource SecondaryButtonStyle}"
+                              Command="{Binding ScopeCommand}"
+                              ToolTip="把搜索范围收窄到这一本书" />
+                    </StackPanel>
+
+                    <ItemsControl ItemsSource="{Binding Hits}">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                          <Button Margin="0,4,0,0" Padding="8,6"
+                                  Style="{StaticResource ListHeaderButtonStyle}"
+                                  Command="{Binding OpenCommand}"
+                                  ToolTip="打开这本书的这一章并高亮关键词">
+                            <StackPanel>
+                              <TextBlock Text="{Binding ChapterTitle}" FontSize="11"
+                                         Foreground="{DynamicResource TextTertiaryBrush}" />
+                              <TextBlock Margin="0,2,0,0" FontSize="12" TextWrapping="Wrap"
+                                         Foreground="{DynamicResource TextSecondaryBrush}"><Run Text="{Binding Before, Mode=OneWay}" /><Run Text="{Binding Match, Mode=OneWay}" FontWeight="Bold" Foreground="{DynamicResource AccentColorBrush}" /><Run Text="{Binding After, Mode=OneWay}" /></TextBlock>
+                            </StackPanel>
+                          </Button>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                  </StackPanel>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+
+          <TextBlock Grid.Row="3" Margin="0,10,0,0" Text="{Binding StatusText}" FontSize="12"
+                     TextWrapping="Wrap"
+                     Foreground="{DynamicResource TextSecondaryBrush}" />
+        </Grid>
+      </Border>
+    </Grid>
+  </Grid>
+</UserControl>

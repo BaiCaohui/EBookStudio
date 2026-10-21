@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>EBookStudio</AssemblyName>
+    <RootNamespace>EbookToolSuite</RootNamespace>
+    <!-- T7-3：窗口/任务栏/快捷方式图标。图源见仓库根的 图标\ 目录 -->
+    <ApplicationIcon>Assets\app.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AvalonEdit" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" />
+    <PackageReference Include="Microsoft.Web.WebView2" />
+    <PackageReference Include="Serilog.Extensions.Hosting" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\EbookToolSuite.Services\EbookToolSuite.Services.csproj" />
+    <ProjectReference Include="..\EbookToolSuite.Reader\EbookToolSuite.Reader.csproj" />
+  </ItemGroup>
+
+</Project>
